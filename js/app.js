@@ -34,9 +34,9 @@
   };
   const REPRESENTS = {
     'Construction': 'the focal industry',
-    'Construction machinery': 'construction’s upstream equipment suppliers — firms EDGAR files under machinery manufacturing (Caterpillar, Deere, Terex) whose products live on construction sites',
-    'Software & IT services': 'the AI producer, upper benchmark — software, IT services and the internet platforms (Alphabet, Meta)',
-    'Computers & chips': 'the hardware side of the AI producer benchmark — computer makers (Apple, IBM, Dell) and the semiconductor industry (NVIDIA, Intel, AMD)',
+    'Construction machinery': 'construction’s upstream equipment suppliers: firms EDGAR files under machinery manufacturing (Caterpillar, Deere, Terex) whose products live on construction sites',
+    'Software & IT services': 'the AI producer, upper benchmark: software, IT services and the internet platforms (Alphabet, Meta)',
+    'Computers & chips': 'the hardware side of the AI producer benchmark: computer makers (Apple, IBM, Dell) and the semiconductor industry (NVIDIA, Intel, AMD)',
     'Aerospace & defense': 'project-based megaproject production, closest analogue',
     'Utilities': 'regulated infrastructure',
     'Retail': 'labor-intensive consumer services',
@@ -78,10 +78,12 @@
     `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${String(cik).padStart(10, '0')}&type=10-K`;
 
   // ---------------------------------------------------------------- routing
-  function show(view) {
+  function show(view, updateHash = true) {
     $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.view === view));
     $$('.view').forEach(v => { v.hidden = v.id !== 'view-' + view; });
-    location.hash = view;
+    // entering the site keeps a clean URL: the hash is only written on
+    // navigation, or when the visitor already arrived with one
+    if (updateHash && (location.hash || view !== 'filings')) location.hash = view;
     window.scrollTo({ top: 0 });
   }
   $('#nav').addEventListener('click', (e) => {
@@ -138,7 +140,7 @@
         const focal = r.industry === 'Construction';
         return `<tr${focal ? ' style="font-weight:650"' : ''}>` +
           `<td><span class="seg-dot" style="background:${Charts.css(IND_COLOR[r.industry])}"></span>${SHORT[r.industry]}</td>` +
-          thr.map(t => `<td class="num">${r['crossed_' + t + 'pct'] || '—'}</td>`).join('') +
+          thr.map(t => `<td class="num">${r['crossed_' + t + 'pct'] || '·'}</td>`).join('') +
           `<td class="num">${fmtPct(r.adoption_2025, 1)}</td></tr>`;
       }).join('') + '</tbody>';
 
@@ -174,8 +176,8 @@
         `<div class="kv">` +
         `<div><div class="k">firms / firm-years</div><div class="v">${comp.firms} / ${comp.firm_years}</div></div>` +
         `<div><div class="k">FY2025 adoption</div><div class="v">${fmtPct(adopt[adopt.length - 1], 1)}</div></div>` +
-        `<div><div class="k">crossed 10% / 50%</div><div class="v">${cr.crossed_10pct || '—'} / ${cr.crossed_50pct || '—'}</div></div>` +
-        `<div><div class="k">intensity, FY2023-25 vs FY2019-22</div><div class="v">${brk ? '&times;' + Charts.fmtNum(brk.ratio, 1) : '—'}</div></div>` +
+        `<div><div class="k">crossed 10% / 50%</div><div class="v">${cr.crossed_10pct || '·'} / ${cr.crossed_50pct || '·'}</div></div>` +
+        `<div><div class="k">intensity, FY2023-25 vs FY2019-22</div><div class="v">${brk ? '&times;' + Charts.fmtNum(brk.ratio, 1) : '·'}</div></div>` +
         `</div>` +
         `<div class="chart" id="spark-${ind.replace(/\W+/g, '')}"></div>`;
       host.appendChild(card);
@@ -276,6 +278,24 @@
      verified deep link, plus one button for the whole document. Sentence
      files load lazily, one JSON per industry. */
   const SLUG = (ind) => ind.replace(/\W+/g, '_').replace(/^_+|_+$/g, '').toLowerCase();
+
+  /* Two-tone highlighting in the review panel: the whole sentence sits on its
+     own soft ground (css .m-txt), and the AI terms themselves pop in a second
+     colour. sec.gov's own fragment highlight cannot be styled from here; this
+     is the panel-side twin of it. */
+  const ESCH = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  const AI_RX = new RegExp(
+    ['artificial[\\s-]+intelligence', 'machine[\\s-]+learning',
+     'deep[\\s-]+learning', 'neural[\\s-]+network(?:s)?',
+     'natural[\\s-]+language[\\s-]+processing', 'computer[\\s-]+vision',
+     'predictive[\\s-]+analytics', 'generative[\\s-]*AI',
+     'large[\\s-]+language[\\s-]+model(?:s)?', 'foundation[\\s-]+model(?:s)?',
+     '\\bLLMs?\\b', '\\bChatGPT\\b', '\\bOpenAI\\b', 'chat\\s?bots?',
+     'A\\.I\\.', '\\bAI\\b', '\\bAGI\\b', '\\bNLP\\b',
+     '\\bGPT-?[3-5o]?\\b'].join('|'), 'gi');
+  const hlKw = (s) => ESCH(s).replace(AI_RX, m => `<mark class="kw">${m}</mark>`);
+
   const sentCache = {};
   async function sentencesFor(ind) {
     if (!(ind in sentCache)) {
@@ -343,7 +363,7 @@
         <div class="modal-body">` +
       (sents.length ? sents.map(([sec, s], i) => {
         const anch = D.anchors && D.anchors[`s:${cik}:${fy}:${i}`];
-        return `<div class="m-sent"><div class="m-txt">${s.replace(/</g, '&lt;')}</div>
+        return `<div class="m-sent"><div class="m-txt">${hlKw(s)}</div>
           <div class="m-foot"><span>${SEC_LABEL[sec] || sec}</span>
           <a target="_blank" rel="noopener" href="${docUrl}${anch ? anch.f : ''}">
             open at this sentence${anch ? '' : ' (top of document)'} ↗</a></div></div>`;
@@ -522,7 +542,7 @@
         <div class="stat"><div class="v">${sm.n_event_pairs}</div>
           <div class="k">adopters matched to same-industry, same-size non-disclosers</div></div>
         <div class="stat"><div class="v">p = ${sm.growth_on_ai_any_p.toFixed(2)}</div>
-          <div class="k">forward revenue growth on AI disclosure — an honest null</div></div>
+          <div class="k">forward revenue growth on AI disclosure, an honest null</div></div>
       </div>
 
       <div class="card"><h2>Who talks: what moves the probability of disclosing AI</h2>
@@ -538,7 +558,7 @@
         <div class="card"><h2>Does the talk line up with R&D?</h2>
           <p class="sub">AI intensity on R&D intensity within each industry
           (standardized), year FE. Only utilities and software line up;
-          construction runs slightly negative — talk and action are separate
+          construction runs slightly negative: talk and action are separate
           things in the focal industry.</p>
           <div id="st-rd" class="chart"></div></div>
       </div>
@@ -547,7 +567,7 @@
         <p class="sub">Adopters against size-matched same-industry firms not yet
         disclosing, in event time. Adopters were already healthier BEFORE
         disclosing and show no jump after: selection, not a measurable
-        performance kick — forward growth on disclosure is a null
+        performance kick: forward growth on disclosure is a null
         (p = ${sm.growth_on_ai_any_p.toFixed(2)}), and risk-heavy framing predicts
         nothing either (p = ${sm.riskshare_growth_p.toFixed(2)}).</p>
         <div class="grid2">
@@ -632,7 +652,7 @@
     host.insertAdjacentHTML('beforeend',
       `${N.moves ? `<div class="card"><h2>The moves of AI disclosure, industry by industry</h2>
         <p class="sub">Three open-weight models coded what each sampled sentence is
-        DOING — showing off, hedging, disclaiming, narrating a threat. Across all
+        DOING: showing off, hedging, disclaiming, narrating a threat. Across all
         nine industries the showcase leads; in paper 1's construction-only view the
         threat narrative led. Sentences without a two-model majority are not shown.</p>
         <div id="nt-moves" class="chart"></div></div>` : ''}
@@ -640,7 +660,7 @@
         <div class="card"><h2>Chain letters: boilerplate with a genealogy</h2>
           <p class="sub">Near-identical sentences across firms, joined into families
           (embedding cosine ≥ .93). By FY2025 a third of ALL AI sentences ride in a
-          chain letter — and every great chain letter is a warning.</p>
+          chain letter, and every great chain letter is a warning.</p>
           <div id="nt-chain" class="chart"></div></div>
         <div class="card"><h2>The six great chain letters</h2>
           <p class="sub">Carrier counts; families first seen in FY2014 were already
@@ -648,7 +668,7 @@
           <div id="nt-chainlist"></div></div>
       </div>` : ''}
       ${N.explorers ? `<div class="grid2">
-        <div class="card"><h2>Exploration converts — eventually</h2>
+        <div class="card"><h2>Exploration converts, eventually</h2>
           <p class="sub">Of firms whose 10-K first said "we are exploring AI", the
           share that has carried deployment language k years on. 82% of pre-ChatGPT
           explorers got there within eight years; post-ChatGPT cohorts are converting
@@ -754,7 +774,7 @@
         `<tr><td><a href="${secCompany(f.cik)}" target="_blank" rel="noopener">${f.name}</a></td>` +
         `<td><span class="seg-dot" style="background:${Charts.css(IND_COLOR[f.industry])}"></span>${SHORT[f.industry]}</td>` +
         `<td class="num">${f.years[0]}–${String(f.years[f.years.length - 1]).slice(2)}</td>` +
-        `<td class="num">${f.first_ai || '—'}</td>` +
+        `<td class="num">${f.first_ai || '·'}</td>` +
         `<td>${Charts.spark(f.spark, { color: IND_COLOR[f.industry], w: 150 })}</td></tr>`
       ).join('') + '</tbody>';
   }
@@ -771,7 +791,7 @@
     D.anchors = {};
     const start = location.hash.replace('#', '');
     show(['overview', 'filings', 'industries', 'claims', 'stats', 'firms', 'method']
-         .includes(start) ? start : 'filings');
+         .includes(start) ? start : 'filings', false);
     const smallP = Promise.all(
       ['headline', 'series', 'crossings', 'tests', 'composition', 'firms', 'claims',
        'firmstats']
