@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Across Industries: is construction a laggard?</title>
+<meta name="description" content="AI language in the 10-Ks of seven US industries, FY2014-2025: construction against auto, software, pharma, utilities, retail and aerospace. Every number traces to a public SEC filing.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="preload" href="data/inventory.json" as="fetch" crossorigin>
+</head>
+<body>
+
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site">
+  <div class="wrap head-inner">
+    <div class="brand">
+      <span class="mark" aria-hidden="true"></span>
+      <div>
+        <div class="brand-t">AI Across Industries</div>
+        <div class="brand-s">Paper 2 of the disclosure series</div>
+      </div>
+    </div>
+    <nav id="nav" aria-label="Sections">
+      <button data-view="filings" class="on">Filings</button>
+      <button data-view="overview">Overview</button>
+      <button data-view="industries">Industries</button>
+      <button data-view="claims">Claims</button>
+      <button data-view="stats">Statistics</button>
+      <button data-view="firms">Firms</button>
+      <button data-view="method">Method</button>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="wrap">
+
+  <!-- ============================================ OVERVIEW -->
+  <section id="view-overview" class="view">
+    <div class="hero">
+      <h1>Is construction an AI laggard, <em>or in phase with everyone else?</em></h1>
+      <p class="lede">
+        Paper 1 measured AI language inside construction's 10-Ks and found a
+        vertical take-off after ChatGPT. It could not say whether construction
+        was early or late, because it had no benchmark. This is the benchmark:
+        the same lexicon, screen and method on six contrast industries.
+      </p>
+    </div>
+
+    <div class="stats">
+      <div class="stat accent"><div class="v" id="ov-rank">&hellip;</div>
+        <div class="k">construction's adoption rank among 7 industries, FY2025</div></div>
+      <div class="stat"><div class="v" id="ov-adopt">&hellip;</div>
+        <div class="k">construction firms disclosing AI, FY2025 (1.8% in FY2014)</div></div>
+      <div class="stat"><div class="v" id="ov-filings">&hellip;</div>
+        <div class="k">10-K filings measured, FY2014&ndash;2025</div></div>
+      <div class="stat"><div class="v" id="ov-eta">&hellip;</div>
+        <div class="k">variance explained by fiscal year vs industry (eta&sup2;)</div></div>
+    </div>
+
+    <div class="card">
+      <h2>Firms disclosing AI, by industry</h2>
+      <p class="sub">Share of operating firms whose 10-K carries core AI language.
+        Construction is the heavy blue line. The dashed rule is the first fiscal
+        year to close after ChatGPT's public release.</p>
+      <div id="ch-adoption" class="chart"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h2>How much AI language</h2>
+        <p class="sub">Core AI terms per 10,000 words of filing text.</p>
+        <div id="ch-intensity" class="chart"></div>
+      </div>
+      <div class="card">
+        <h2>Where the language sits</h2>
+        <p class="sub">Share of located AI mentions in Item&nbsp;1A Risk Factors
+          rather than the business description or MD&amp;A.</p>
+        <div id="ch-risk" class="chart"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>When each industry crossed each adoption threshold</h2>
+      <p class="sub">First fiscal year the share reached 5, 10, 25, 50% of firms
+        and never fell back. Construction lagged software by six years at the
+        early thresholds and finished with the pack at 50%.</p>
+      <div class="tablewrap"><table class="data" id="tbl-cross"></table></div>
+      <p class="note" id="ov-note"></p>
+    </div>
+  </section>
+
+  <!-- ============================================ FILINGS -->
+  <section id="view-filings" class="view" hidden>
+    <div class="hero">
+      <h1>Every filing we read, <em>one click from the original</em></h1>
+      <p class="lede">
+        One square per company-year. Colour is how much artificial-intelligence
+        language that annual report carries. Hover a blue square to read the
+        first AI sentence it found; click it to open that 10-K on sec.gov
+        <em>scrolled to that sentence, highlighted</em>. Pick an industry below
+        &mdash; each one splits into its SIC subgroups, including
+        construction's upstream machinery suppliers, the Caterpillar and Deere
+        band &mdash; or search across all eight.
+      </p>
+    </div>
+    <div class="card">
+      <div class="toolbar">
+        <input id="inv-search" type="search" placeholder="Find a company across all industries&hellip;"
+               aria-label="Search companies">
+        <select id="inv-ind" aria-label="Industry"></select>
+        <label class="chk"><input type="checkbox" id="inv-ai"> Only firms that mention AI</label>
+        <span class="count" id="inv-count"></span>
+      </div>
+      <div class="legend inv-legend">
+        <span><i style="background:var(--surface);box-shadow:inset 0 0 0 1px var(--line-2)"></i>10-K filed, outside the operating screen that year</span>
+        <span><i style="background:var(--zero)"></i>in the panel, no AI language</span>
+        <span><i style="background:var(--s1)"></i>1&ndash;4 core AI terms</span>
+        <span><i style="background:var(--s3)"></i>5&ndash;14</span>
+        <span><i style="background:var(--s5)"></i>15 or more</span>
+      </div>
+      <div id="inv-grid" class="inv"><p class="m-note">Loading the filings grid…</p></div>
+    </div>
+  </section>
+
+  <!-- ============================================ INDUSTRIES -->
+  <section id="view-industries" class="view" hidden>
+    <div class="hero">
+      <h1>Seven industries, <em>one yardstick</em></h1>
+      <p class="lede">Each contrast industry earns its place on a theoretical
+        dimension: software is the AI producer, aerospace the closest
+        project-based analogue to construction, utilities the regulated pole,
+        retail the labor-intensive pole, auto the traditional capital-intensive
+        manufacturer, pharma the R&amp;D-intensive regulated science.</p>
+    </div>
+    <div id="ind-cards"></div>
+  </section>
+
+  <!-- ============================================ CLAIMS -->
+  <section id="view-claims" class="view" hidden>
+    <div class="hero">
+      <h1>What the language <em>claims</em></h1>
+      <p class="lede">
+        Term counts say how much an industry talks about AI; they cannot say
+        what firms are claiming. Three open-weight language models from three
+        labs (Alibaba, Microsoft, Mistral AI) read a stratified sample of AI
+        passages and coded each as deployment, exploration, exposure or
+        governance; a label is the 2-of-3 majority. Same design, codebook and
+        models as paper 1.
+      </p>
+    </div>
+    <div id="claims-body"></div>
+  </section>
+
+  <!-- ============================================ STATISTICS -->
+  <section id="view-stats" class="view" hidden>
+    <div class="hero">
+      <h1>Who talks, and <em>what follows</em></h1>
+      <p class="lede">
+        The statistics block: which firm characteristics predict AI disclosure
+        once the calendar and the industry are held fixed, whether the talk
+        lines up with R&amp;D spending, and what happens around the first
+        disclosure. Every estimate is an <em>association</em> &mdash;
+        disclosure is chosen, never assigned &mdash; with standard errors
+        clustered by firm and year/industry fixed effects throughout.
+      </p>
+    </div>
+    <div id="stats-body"></div>
+  </section>
+
+  <!-- ============================================ FIRMS -->
+  <section id="view-firms" class="view" hidden>
+    <div class="hero">
+      <h1>Every firm <em>in the panel</em></h1>
+      <p class="lede">Operating firms only (assets or revenue of $10M and a real
+        annual report). The sparkline is AI intensity over the firm's filing
+        years; a firm's name links to its filings on sec.gov.</p>
+    </div>
+    <div class="card">
+      <div class="toolbar">
+        <input id="f-search" type="search" placeholder="Find a company&hellip;" aria-label="Search companies">
+        <select id="f-ind" aria-label="Filter by industry"></select>
+        <label class="chk"><input type="checkbox" id="f-ai"> Only firms that mention AI</label>
+        <span class="count" id="f-count"></span>
+      </div>
+      <div class="tablewrap"><table class="data" id="tbl-firms"></table></div>
+      <button class="more" id="f-more" hidden>Show more firms</button>
+    </div>
+  </section>
+
+  <!-- ============================================ METHOD -->
+  <section id="view-method" class="view" hidden>
+    <div class="hero"><h1>How it was <em>measured</em></h1></div>
+    <div class="card prose">
+      <h2>Data</h2>
+      <p>Every 10-K, 10-K/A and 10-KT filed by US registrants in seven
+        industries (SIC-defined), fiscal years 2014&ndash;2025, pulled from SEC
+        EDGAR and frozen under a SHA-256 manifest. Financial statement data
+        come from the SEC XBRL company-facts API. Nothing is licensed,
+        surveyed, or hand-entered; every number traces to a public SEC URL.</p>
+      <h2>Measurement</h2>
+      <p>The AI lexicon, the Item segmenter, the per-filing measures and the
+        operating screen are a byte-level copy of paper 1's, so the two
+        papers' numbers are comparable by construction. The bare abbreviation
+        &ldquo;AI&rdquo; is matched case-sensitively with boundary guards, so
+        AIA contract references never count.</p>
+      <h2>The screen</h2>
+      <p>A filing enters the operating sample when the firm shows at least
+        $10M of assets or revenue and the filing runs at least 5,000 words.
+        The screen matters more here than in paper 1: blank-check and shell
+        registrants carry the SIC codes of auto and pharma, and they would
+        bias the contrast if left in.</p>
+      <h2>What this is not</h2>
+      <p>A 10-K records what a firm chose to tell investors. Every result on
+        this site is a fact about corporate language, not about site-level
+        technology adoption.</p>
+      <h2>Reading the study</h2>
+      <p>The analysis code, outputs and figure sources live in the paper's
+        repository; the manuscript cites paper 1's published construction
+        numbers rather than recomputing them.</p>
+    </div>
+  </section>
+
+</main>
+
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
