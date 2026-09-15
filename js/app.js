@@ -1,7 +1,7 @@
 /* ============================================================================
    AI Across Industries: views and routing.
 
-   Plain JS, no framework, no build step (same stance as paper 1's site).
+   Plain JS, no framework, no build step (same stance as the companion construction study's site).
    All data is baked JSON under data/; nothing here computes a statistic.
    ========================================================================= */
 (function () {
@@ -44,7 +44,7 @@
     'Pharma & biotech': 'R&D-intensive regulated science',
   };
 
-  /* SIC subgroups inside each industry, so the grid reads the way paper 1's
+  /* SIC subgroups inside each industry, so the grid reads the way the companion construction study's
      does for construction. Labels follow the SEC's own SIC titles. */
   function subgroup(industry, sic) {
     sic = +sic;
@@ -263,7 +263,7 @@
 
   // ---------------------------------------------------------------- filings grid
   /* One cell per firm-year, every cell a link to the 10-K on sec.gov. All 719
-     of paper 1's filings fit on one page; 13,500 do not, so one industry
+     of the companion construction study's filings fit on one page; 13,500 do not, so one industry
      renders at a time (searching looks across all seven), in chunks. */
   const secDoc = (cik, adsh, doc) =>
     `https://www.sec.gov/Archives/edgar/data/${cik}/${adsh.replace(/-/g, '')}/` +
@@ -653,7 +653,7 @@
       `${N.moves ? `<div class="card"><h2>The moves of AI disclosure, industry by industry</h2>
         <p class="sub">Three open-weight models coded what each sampled sentence is
         DOING: showing off, hedging, disclaiming, narrating a threat. Across all
-        nine industries the showcase leads; in paper 1's construction-only view the
+        nine industries the showcase leads; in the companion construction study's construction-only view the
         threat narrative led. Sentences without a two-model majority are not shown.</p>
         <div id="nt-moves" class="chart"></div></div>` : ''}
       ${N.chains ? `<div class="grid2">
