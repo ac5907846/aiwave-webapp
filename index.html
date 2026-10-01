@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AI Across Industries: is construction a laggard?</title>
-<meta name="description" content="AI language in the 10-Ks of seven US industries, FY2014-2025: construction against auto, software, pharma, utilities, retail and aerospace. Every number traces to a public SEC filing.">
+<title>Backed Claims: AI resources and AI talk in US 10-Ks</title>
+<meta name="description" content="Do firms that hold AI resources make the specific AI claims? R&D, AI patents and AI workers against the AI language of 22,780 10-K filings across nine US sectors, FY2014-2025. Every number traces to a public SEC filing.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
-<link rel="preload" href="data/inventory.json" as="fetch" crossorigin>
+<link rel="preload" href="data/headline.json" as="fetch" crossorigin>
 </head>
 <body>
 
@@ -19,17 +19,15 @@
   <div class="wrap head-inner">
     <div class="brand">
       <div>
-        <div class="brand-t">AI Across Industries</div>
-        <div class="brand-s">AI language in the 10-K filings of nine US industries</div>
+        <div class="brand-t">Backed Claims</div>
+        <div class="brand-s">AI resources and AI talk in the 10-Ks of nine US sectors</div>
       </div>
     </div>
     <nav id="nav" aria-label="Sections">
-      <button data-view="filings" class="on">Filings</button>
-      <button data-view="overview">Overview</button>
-      <button data-view="industries">Industries</button>
-      <button data-view="claims">Claims</button>
-      <button data-view="stats">Statistics</button>
-      <button data-view="firms">Firms</button>
+      <button data-view="overview" class="on">Overview</button>
+      <button data-view="findings">Findings</button>
+      <button data-view="sectors">Sectors</button>
+      <button data-view="filings">Filings</button>
       <button data-view="method">Method</button>
     </nav>
   </div>
@@ -40,56 +38,120 @@
   <!-- ============================================ OVERVIEW -->
   <section id="view-overview" class="view">
     <div class="hero">
-      <h1>Is construction an AI laggard, <em>or in phase with everyone else?</em></h1>
+      <h1>When a firm says it can do AI, <em>does it hold anything behind the words?</em></h1>
       <p class="lede">
-        A companion study measured AI language inside construction's 10-Ks and found a
-        vertical take-off after ChatGPT. It could not say whether construction
-        was early or late, because it had no benchmark. This is the benchmark:
-        the same lexicon, screen and method on six contrast industries.
+        Most AI language in annual reports is generic. This study separates the rare
+        <b>specific capability claims</b>, sentences that name a product, a use and a result,
+        from generic AI talk and AI risk language, and asks whether the specific claims
+        track what the firm actually holds: R&amp;D spending, AI patents, AI workers.
+        They do, where the resource fits the sector, and less where securities
+        litigation is common.
       </p>
     </div>
 
     <div class="stats">
-      <div class="stat accent"><div class="v" id="ov-rank">&hellip;</div>
-        <div class="k">construction's adoption rank among 7 industries, FY2025</div></div>
-      <div class="stat"><div class="v" id="ov-adopt">&hellip;</div>
-        <div class="k">construction firms disclosing AI, FY2025 (1.8% in FY2014)</div></div>
-      <div class="stat"><div class="v" id="ov-filings">&hellip;</div>
-        <div class="k">10-K filings measured, FY2014&ndash;2025</div></div>
-      <div class="stat"><div class="v" id="ov-eta">&hellip;</div>
-        <div class="k">variance explained by fiscal year vs industry (eta&sup2;)</div></div>
+      <div class="stat"><div class="v" id="ov-n10k">&hellip;</div>
+        <div class="k">10-K filings read, <span id="ov-span"></span></div></div>
+      <div class="stat"><div class="v" id="ov-firms">&hellip;</div>
+        <div class="k">firms in nine sectors</div></div>
+      <div class="stat"><div class="v" id="ov-nai">&hellip;</div>
+        <div class="k">AI sentences coded by three local language models</div></div>
+      <div class="stat accent"><div class="v" id="ov-nc">&hellip;</div>
+        <div class="k">are specific capability claims (3 or more of 6 specificity points)</div></div>
     </div>
 
     <div class="card">
-      <h2>Firms disclosing AI, by industry</h2>
-      <p class="sub">Share of operating firms whose 10-K carries core AI language.
-        Construction is the heavy blue line. The dashed rule is the first fiscal
-        year to close after ChatGPT's public release.</p>
-      <div id="ch-adoption" class="chart"></div>
-    </div>
-
-    <div class="grid2">
-      <div class="card">
-        <h2>How much AI language</h2>
-        <p class="sub">Core AI terms per 10,000 words of filing text.</p>
-        <div id="ch-intensity" class="chart"></div>
-      </div>
-      <div class="card">
-        <h2>Where the language sits</h2>
-        <p class="sub">Share of located AI mentions in Item&nbsp;1A Risk Factors
-          rather than the business description or MD&amp;A.</p>
-        <div id="ch-risk" class="chart"></div>
-      </div>
+      <h2>The four results</h2>
+      <div class="verdicts" id="ov-verdicts"></div>
     </div>
 
     <div class="card">
-      <h2>When each industry crossed each adoption threshold</h2>
-      <p class="sub">First fiscal year the share reached 5, 10, 25, 50% of firms
-        and never fell back. Construction lagged software by six years at the
-        early thresholds and finished with the pack at 50%.</p>
-      <div class="tablewrap"><table class="data" id="tbl-cross"></table></div>
-      <p class="note" id="ov-note"></p>
+      <h2>Who says what, over time</h2>
+      <p class="sub">Share of each sector's 10-Ks carrying the selected kind of AI language.
+        Pick the outcome; hover a point for the exact share and sample.</p>
+      <div class="seg" id="ov-seg" role="group" aria-label="Outcome">
+        <button data-k="C" class="on">specific capability claims (C)</button>
+        <button data-k="G">generic AI risk (G)</button>
+        <button data-k="F">firm-specific AI risk (F)</button>
+        <button data-k="AI">any AI language</button>
+      </div>
+      <div id="ch-diffusion" class="chart"></div>
     </div>
+  </section>
+
+  <!-- ============================================ FINDINGS -->
+  <section id="view-findings" class="view" hidden>
+    <div class="hero">
+      <h1>Three hypotheses, <em>every estimate interactive</em></h1>
+      <p class="lede">
+        Each estimate below comes from the paper's result files, with the same two
+        designs throughout: <b>within firm</b> (firm and year fixed effects: does the firm say
+        more when it holds more?) and <b>between firms</b> (sector &times; year fixed effects: do
+        holders say more than non-holders in the same sector and year?). Bands and whiskers
+        are 95% intervals (estimate &plusmn; 1.96 standard errors, clustered by firm).
+        Every estimate is an association; disclosure is chosen, never assigned.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>H1 alignment: resources predict specific claims, and claims more than risk talk</h2>
+      <p class="sub">The effect of each resource at t&minus;1 on AI language at t. Filled dot:
+        within firm; hollow dot: between firms. Rows G and F are the falsification check:
+        the same models with risk language as the outcome, where resource theory predicts
+        nothing. R&amp;D's link runs to claims, not to risk language; AI patents raise every
+        register of AI talk.</p>
+      <div class="grid3" id="h1-forests"></div>
+    </div>
+
+    <div class="card">
+      <h2>H2 congruence: the resource counts where the sector fits it</h2>
+      <p class="sub">Interaction terms: AI patents &times; the sector builds AI in-house
+        (S&#8322;), and R&amp;D &times; high industry AI exposure (S&#8321;).</p>
+      <div class="grid2" id="h2-forests"></div>
+    </div>
+
+    <div class="card">
+      <h2>H3 litigation: screening or chilling?</h2>
+      <p class="sub">The marginal effect of each resource on specific claims as sector
+        litigation exposure rises (the share of the sector's firms sued in the calendar
+        year before the filing). Screening (H3a) predicts a rising line, chilling (H3b) a
+        falling one. The AI patent slope falls in both designs; the R&amp;D slope rises
+        only within firm.</p>
+      <div class="seg" id="h3-seg" role="group" aria-label="Design">
+        <button data-fe="WITHIN" class="on">within firm</button>
+        <button data-fe="BETWEEN">between firms</button>
+      </div>
+      <div class="grid2" id="h3-lines"></div>
+    </div>
+
+    <div class="card">
+      <h2>Sector by sector: the resource slope in each industry</h2>
+      <p class="sub">The H1 slope estimated separately per sector, drawn where at least 20
+        firms hold the resource. Green: the sector builds AI in-house; amber: it buys AI.
+        Hover for the estimate, p-value and firm count; the Wald test asks whether the
+        drawn slopes are equal.</p>
+      <div class="seg" id="sl-seg" role="group" aria-label="Resource and design">
+        <button data-res="log AI patent stock" data-fe="WITHIN" class="on">AI patents &middot; within</button>
+        <button data-res="log AI patent stock" data-fe="BETWEEN">AI patents &middot; between</button>
+        <button data-res="R&D / revenue" data-fe="WITHIN">R&amp;D &middot; within</button>
+        <button data-res="R&D / revenue" data-fe="BETWEEN">R&amp;D &middot; between</button>
+      </div>
+      <div id="ch-slopes" class="chart"></div>
+      <p class="note" id="sl-note"></p>
+    </div>
+  </section>
+
+  <!-- ============================================ SECTORS -->
+  <section id="view-sectors" class="view" hidden>
+    <div class="hero">
+      <h1>Nine sectors, <em>two ways of getting AI</em></h1>
+      <p class="lede">Four sectors build AI into their own products (software, computers
+        and chips, aerospace and defense, auto manufacturing); five buy it (pharma,
+        retail, utilities, construction, construction machinery). The split is the
+        congruence moderator S&#8322;: an AI patent signals capability where firms are
+        expected to build.</p>
+    </div>
+    <div id="sec-cards"></div>
   </section>
 
   <!-- ============================================ FILINGS -->
@@ -97,129 +159,85 @@
     <div class="hero">
       <h1>Every filing we read, <em>one click from the original</em></h1>
       <p class="lede">
-        One square per company-year. Colour is how much artificial-intelligence
-        language that annual report carries. Hover a blue square to read the
-        first AI sentence it found; click it to open that 10-K on sec.gov
-        <em>scrolled to that sentence, highlighted</em>. Pick an industry below:
-each one splits into its SIC subgroups, including
-        construction's upstream machinery suppliers, the Caterpillar and Deere
-        band, or search across all eight.
+        One square per company-year, coloured by its coded AI language. Hover a square to
+        read the filing's best coded sentence, the top-scoring specific claim where one
+        exists; click to open that 10-K on sec.gov. Search spans all nine sectors.
       </p>
     </div>
     <div class="card">
       <div class="toolbar">
-        <input id="inv-search" type="search" placeholder="Find a company across all industries&hellip;"
+        <input id="inv-search" type="search" placeholder="Find a company across all sectors&hellip;"
                aria-label="Search companies">
-        <select id="inv-ind" aria-label="Industry"></select>
-        <label class="chk"><input type="checkbox" id="inv-ai"> Only firms that mention AI</label>
+        <select id="inv-ind" aria-label="Sector"></select>
+        <label class="chk"><input type="checkbox" id="inv-c"> Only firms with a specific claim</label>
         <span class="count" id="inv-count"></span>
       </div>
       <div class="legend inv-legend">
-        <span><i style="background:var(--surface);box-shadow:inset 0 0 0 1px var(--line-2)"></i>10-K filed, outside the operating screen that year</span>
+        <span><i style="background:var(--surface);box-shadow:inset 0 0 0 1px var(--line-2)"></i>filed, outside the operating screen that year</span>
         <span><i style="background:var(--zero)"></i>in the panel, no AI language</span>
-        <span><i style="background:var(--s1)"></i>1&ndash;4 core AI terms</span>
-        <span><i style="background:var(--s3)"></i>5&ndash;14</span>
-        <span><i style="background:var(--s5)"></i>15 or more</span>
+        <span><i style="background:var(--s1)"></i>AI language, no specific claim</span>
+        <span><i style="background:var(--s3)"></i>1&ndash;2 specific claims</span>
+        <span><i style="background:var(--s5)"></i>3 or more specific claims</span>
       </div>
-      <div id="inv-grid" class="inv"><p class="m-note">Loading the filings grid…</p></div>
-    </div>
-  </section>
-
-  <!-- ============================================ INDUSTRIES -->
-  <section id="view-industries" class="view" hidden>
-    <div class="hero">
-      <h1>Seven industries, <em>one yardstick</em></h1>
-      <p class="lede">Each contrast industry earns its place on a theoretical
-        dimension: software is the AI producer, aerospace the closest
-        project-based analogue to construction, utilities the regulated pole,
-        retail the labor-intensive pole, auto the traditional capital-intensive
-        manufacturer, pharma the R&amp;D-intensive regulated science.</p>
-    </div>
-    <div id="ind-cards"></div>
-  </section>
-
-  <!-- ============================================ CLAIMS -->
-  <section id="view-claims" class="view" hidden>
-    <div class="hero">
-      <h1>What the language <em>claims</em></h1>
-      <p class="lede">
-        Term counts say how much an industry talks about AI; they cannot say
-        what firms are claiming. Three open-weight language models from three
-        labs (Alibaba, Microsoft, Mistral AI) read a stratified sample of AI
-        passages and coded each as deployment, exploration, exposure or
-        governance; a label is the 2-of-3 majority. Same design, codebook and
-        models as the companion construction study.
-      </p>
-    </div>
-    <div id="claims-body"></div>
-  </section>
-
-  <!-- ============================================ STATISTICS -->
-  <section id="view-stats" class="view" hidden>
-    <div class="hero">
-      <h1>Who talks, and <em>what follows</em></h1>
-      <p class="lede">
-        The statistics block: which firm characteristics predict AI disclosure
-        once the calendar and the industry are held fixed, whether the talk
-        lines up with R&amp;D spending, and what happens around the first
-        disclosure. Every estimate is an <em>association</em>,
-        disclosure is chosen, never assigned, with standard errors
-        clustered by firm and year/industry fixed effects throughout.
-      </p>
-    </div>
-    <div id="stats-body"></div>
-  </section>
-
-  <!-- ============================================ FIRMS -->
-  <section id="view-firms" class="view" hidden>
-    <div class="hero">
-      <h1>Every firm <em>in the panel</em></h1>
-      <p class="lede">Operating firms only (assets or revenue of $10M and a real
-        annual report). The sparkline is AI intensity over the firm's filing
-        years; a firm's name links to its filings on sec.gov.</p>
-    </div>
-    <div class="card">
-      <div class="toolbar">
-        <input id="f-search" type="search" placeholder="Find a company&hellip;" aria-label="Search companies">
-        <select id="f-ind" aria-label="Filter by industry"></select>
-        <label class="chk"><input type="checkbox" id="f-ai"> Only firms that mention AI</label>
-        <span class="count" id="f-count"></span>
-      </div>
-      <div class="tablewrap"><table class="data" id="tbl-firms"></table></div>
-      <button class="more" id="f-more" hidden>Show more firms</button>
+      <div id="inv-grid" class="inv"><p class="m-note">Loading the filings grid&hellip;</p></div>
     </div>
   </section>
 
   <!-- ============================================ METHOD -->
   <section id="view-method" class="view" hidden>
     <div class="hero"><h1>How it was <em>measured</em></h1></div>
+
     <div class="card prose">
       <h2>Data</h2>
-      <p>Every 10-K, 10-K/A and 10-KT filed by US registrants in seven
-        industries (SIC-defined), fiscal years 2014&ndash;2025, pulled from SEC
-        EDGAR and frozen under a SHA-256 manifest. Financial statement data
-        come from the SEC XBRL company-facts API. Nothing is licensed,
-        surveyed, or hand-entered; every number traces to a public SEC URL.</p>
-      <h2>Measurement</h2>
-      <p>The AI lexicon, the Item segmenter, the per-filing measures and the
-        operating screen are a byte-level copy of the companion construction study's, so the two
-        papers' numbers are comparable by construction. The bare abbreviation
-        &ldquo;AI&rdquo; is matched case-sensitively with boundary guards, so
-        AIA contract references never count.</p>
-      <h2>The screen</h2>
-      <p>A filing enters the operating sample when the firm shows at least
-        $10M of assets or revenue and the filing runs at least 5,000 words.
-        The screen matters more here than in the companion construction study: blank-check and shell
-        registrants carry the SIC codes of auto and pharma, and they would
-        bias the contrast if left in.</p>
+      <p>Every original 10-K filed on SEC EDGAR by US registrants in nine SIC-defined
+        sectors, fiscal years 2014&ndash;2025, frozen under a manifest. Resources and
+        controls come from Compustat and SEC XBRL at t&minus;1; AI patents from the USPTO
+        Artificial Intelligence Patent Dataset and PatentsView, accumulated with 15%
+        annual depreciation; the AI-worker share from the replication package of a
+        published study (available to fiscal year 2022); securities class actions from
+        Audit Analytics and the Stanford Securities Class Action Clearinghouse; industry
+        AI exposure from published occupation-based scores.</p>
+      <h2>From text to variables</h2>
+      <p>A lexicon of 13 AI term families (period-consistent, so the post-2022 jump is
+        not manufactured by today's vocabulary) pulls every AI-term sentence with its
+        neighbors. Three open-weight language models from three labs (Alibaba, Mistral AI,
+        Microsoft) code each sentence locally: is it about AI, does it claim a capability,
+        which of six specificity points does it meet (action, use case, named product,
+        number, date or stage, verifiable detail), and is it generic or firm-specific AI
+        risk? A label needs 2-of-3 agreement.
+        A capability sentence with 3 or more points is a <b>specific capability claim
+        (C)</b>; risk sentences become <b>generic (G)</b> or <b>firm-specific (F)</b> AI
+        risk. Counts are scaled per 10,000 words of filing text.</p>
+      <div id="agree-tbl"></div>
+      <h2>The designs</h2>
+      <p>Within firm: firm and year fixed effects, so a firm is compared with itself as
+        its resources change. Between firms: sector &times; year fixed effects, so a firm
+        is compared with its sector peers in the same year. Controls at t&minus;1: size,
+        leverage, cash, capex, ROA, R&amp;D indicators and 10-K length at t. Standard
+        errors are clustered by firm. The operating screen keeps firms with at least $10M
+        of assets or revenue and a 10-K of at least 5,000 words.</p>
       <h2>What this is not</h2>
-      <p>A 10-K records what a firm chose to tell investors. Every result on
-        this site is a fact about corporate language, not about site-level
-        technology adoption.</p>
-      <h2>Reading the study</h2>
-      <p>The analysis code, outputs and figure sources live in the paper's
-        repository; the manuscript cites the companion study's published construction
-        numbers rather than recomputing them.</p>
+      <p>A 10-K records what a firm chose to tell investors. Every result on this site is
+        a fact about corporate language and the resources behind it, not a measure of
+        site-level technology adoption, and every estimate is an association: disclosure
+        is chosen, never assigned.</p>
+    </div>
+
+    <div class="card">
+      <h2>Score a claim yourself</h2>
+      <p class="sub">The paper's coders are three language models reading with a codebook.
+        This box is only a rough sketch of the six specificity points with pattern rules,
+        so you can feel what "specific" means. Paste an AI sentence from any annual
+        report, or try the example.</p>
+      <div class="scorer">
+        <textarea id="sc-in" rows="3" spellcheck="false"></textarea>
+        <div class="scorer-row">
+          <button id="sc-go" class="btn">Score it</button>
+          <button id="sc-ex" class="btn ghost">Use a real 10-K claim</button>
+          <span class="count" id="sc-sum"></span>
+        </div>
+        <div id="sc-out" class="sc-grid"></div>
+      </div>
     </div>
   </section>
 

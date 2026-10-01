@@ -404,7 +404,74 @@
     ]);
   }
 
+  // ================================================================ forest
+  /* Rows of estimates with 95% whiskers around a zero line. Each row may carry
+     several points (e.g. the within-firm and between-firm designs). */
+  function forest(host, cfg) {
+    const rowH = cfg.rowH || 30;
+    const w = cfg.w || 360, h = cfg.rows.length * rowH + 40;
+    const m = { t: 10, r: 16, b: 30, l: cfg.labelW || 92 };
+    const f = frame(host, w, h, m);
+    const pts = cfg.rows.flatMap(r => r.points);
+    let lo = Math.min(0, ...pts.map(p => p.est - 1.96 * p.se));
+    let hi = Math.max(0, ...pts.map(p => p.est + 1.96 * p.se));
+    const pad = (hi - lo) * .08 || 1; lo -= pad; hi += pad;
+    const xS = (v) => m.l + ((v - lo) / (hi - lo)) * f.iw;
+    el('line', { x1: xS(0), x2: xS(0), y1: m.t, y2: m.t + f.ih, class: 'zero-line' }, f.svg);
+    niceTicks(lo, hi, 4).forEach(t => {
+      el('text', { x: xS(t), y: m.t + f.ih + 16, class: 'ax-txt', 'text-anchor': 'middle' },
+         f.svg).textContent = cfg.xFmt ? cfg.xFmt(t) : t;
+    });
+    cfg.rows.forEach((r, i) => {
+      const y = m.t + i * rowH + rowH / 2;
+      el('text', { x: m.l - 8, y: y + 4, class: 'ax-txt', 'text-anchor': 'end',
+                   style: r.bold ? 'font-weight:600' : '' }, f.svg).textContent = r.label;
+      r.points.forEach((p, pi) => {
+        const yy = y + (r.points.length > 1 ? (pi - (r.points.length - 1) / 2) * 9 : 0);
+        const col = css(p.color || '--accent');
+        el('line', { x1: xS(p.est - 1.96 * p.se), x2: xS(p.est + 1.96 * p.se),
+                     y1: yy, y2: yy, stroke: col, 'stroke-width': 1.8 }, f.svg);
+        const dot = el('circle', { cx: xS(p.est), cy: yy, r: 4,
+                                   fill: p.hollow ? css('--surface') : col,
+                                   stroke: col, 'stroke-width': 1.8 }, f.svg);
+        hoverable(dot, `<b>${r.label} · ${p.name}</b><br>${p.tip}`);
+      });
+    });
+  }
+
+  // ================================================================ band line
+  /* A line over a numeric x with a shaded 95% band, for marginal-effect curves. */
+  function bandLine(host, cfg) {
+    const w = cfg.w || 380, h = cfg.height || 240;
+    const m = { t: 14, r: 14, b: 34, l: 52 };
+    const f = frame(host, w, h, m);
+    const xs = cfg.x;
+    let lo = Math.min(0, ...cfg.series.flatMap(s => s.lo));
+    let hi = Math.max(0, ...cfg.series.flatMap(s => s.hi));
+    const pad = (hi - lo) * .06 || 1; lo -= pad; hi += pad;
+    const xS = (v) => m.l + ((v - xs[0]) / (xs[xs.length - 1] - xs[0] || 1)) * f.iw;
+    const yS = (v) => m.t + f.ih - ((v - lo) / (hi - lo)) * f.ih;
+    axes(f, niceTicks(xs[0], xs[xs.length - 1], 4), niceTicks(lo, hi, 4),
+         { xScale: xS, yScale: yS, xFmt: cfg.xFmt, yFmt: cfg.yFmt, yLabel: cfg.yLabel });
+    el('line', { x1: m.l, x2: m.l + f.iw, y1: yS(0), y2: yS(0), class: 'zero-line' }, f.svg);
+    cfg.series.forEach(s => {
+      const col = css(s.color || '--accent');
+      const band = xs.map((x, i) => `${xS(x)},${yS(s.lo[i])}`)
+        .concat(xs.map((x, i) => `${xS(x)},${yS(s.hi[i])}`).reverse());
+      el('polygon', { points: band.join(' '), fill: col, opacity: .14 }, f.svg);
+      el('polyline', { points: xs.map((x, i) => `${xS(x)},${yS(s.eff[i])}`).join(' '),
+                       fill: 'none', stroke: col, 'stroke-width': 2.2,
+                       'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, f.svg);
+      xs.forEach((x, i) => {
+        if (i % (cfg.everyDot || 5)) return;
+        const c = el('circle', { cx: xS(x), cy: yS(s.eff[i]), r: 3.2, fill: col,
+                                 stroke: css('--surface'), 'stroke-width': 1.2 }, f.svg);
+        hoverable(c, `<b>${s.name}</b><br>${cfg.tipFmt(x, s.eff[i], s.lo[i], s.hi[i])}`);
+      });
+    });
+  }
+
   global.Charts = { lineChart, stackedBar, groupedBar, barsH, spark,
-                    dotTimeline, trajChart, legend, fmtPct, fmtNum, css,
-                    tint, swatchCSS, showTip, hideTip };
+                    dotTimeline, trajChart, legend, forest, bandLine,
+                    fmtPct, fmtNum, css, tint, swatchCSS, showTip, hideTip };
 })(window);

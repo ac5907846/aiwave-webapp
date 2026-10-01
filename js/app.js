@@ -1,834 +1,376 @@
 /* ============================================================================
-   AI Across Industries: views and routing.
+   Backed Claims: AI resources and AI talk in US 10-Ks (Paper A companion).
 
-   Plain JS, no framework, no build step (same stance as the companion construction study's site).
-   All data is baked JSON under data/; nothing here computes a statistic.
+   Every number on the site is read from data/*.json, which build_data.py bakes
+   from the analysis outputs. Nothing is typed in here except words.
    ========================================================================= */
 (function () {
   'use strict';
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => Array.from(document.querySelectorAll(s));
+  const J = (p) => fetch('data/' + p).then((r) => r.json());
+  const fmtInt = (n) => Number(n).toLocaleString('en-US');
+  const pfmt = (p) => (p < 0.001 ? '<.001' : p.toFixed(3).replace(/^0/, ''));
+  const pct = (v, d) => (v * 100).toFixed(d === undefined ? 0 : d) + '%';
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const C = window.Charts;
 
-  const $ = (s, r) => (r || document).querySelector(s);
-  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
-  const fmtPct = Charts.fmtPct;
-
-  const INDUSTRIES = ['Construction', 'Construction machinery', 'Auto manufacturing',
-                      'Software & IT services', 'Computers & chips',
-                      'Pharma & biotech', 'Utilities',
-                      'Retail', 'Aerospace & defense'];
-  /* the industry palette from the figures: construction always #0072B2. The
-     machinery band -- construction's upstream suppliers, the Caterpillar and
-     Deere firms -- deliberately wears a darker member of the same blue family,
-     so the kinship is visible at a glance. */
-  const IND_COLOR = {
-    'Construction': '--c1', 'Construction machinery': '--s4',
-    'Software & IT services': '--c3', 'Computers & chips': '--ink',
-    'Pharma & biotech': '--c4', 'Auto manufacturing': '--c2',
-    'Utilities': '--s1', 'Retail': '--risk', 'Aerospace & defense': '--neutral',
+  const SLUG = {
+    'Software & IT services': 'software_it_services', 'Computers & chips': 'computers_chips',
+    'Aerospace & defense': 'aerospace_defense', 'Auto manufacturing': 'auto_manufacturing',
+    'Pharma & biotech': 'pharma_biotech', 'Retail': 'retail', 'Utilities': 'utilities',
+    'Construction': 'construction', 'Construction machinery': 'construction_machinery',
   };
-  const SHORT = {
-    'Construction': 'Construction', 'Construction machinery': 'Constr. machinery',
-    'Auto manufacturing': 'Auto mfg',
-    'Software & IT services': 'Software & IT', 'Computers & chips': 'Computers & chips',
-    'Pharma & biotech': 'Pharma & biotech',
-    'Utilities': 'Utilities', 'Retail': 'Retail', 'Aerospace & defense': 'Aerospace & def',
+  const SECTOR_VAR = {
+    'Software & IT services': '--i1', 'Computers & chips': '--i2', 'Aerospace & defense': '--i3',
+    'Auto manufacturing': '--i4', 'Pharma & biotech': '--i5', 'Retail': '--i6',
+    'Utilities': '--i7', 'Construction': '--i8', 'Construction machinery': '--i9',
   };
-  const REPRESENTS = {
-    'Construction': 'the focal industry',
-    'Construction machinery': 'construction’s upstream equipment suppliers: firms EDGAR files under machinery manufacturing (Caterpillar, Deere, Terex) whose products live on construction sites',
-    'Software & IT services': 'the AI producer, upper benchmark: software, IT services and the internet platforms (Alphabet, Meta)',
-    'Computers & chips': 'the hardware side of the AI producer benchmark: computer makers (Apple, IBM, Dell) and the semiconductor industry (NVIDIA, Intel, AMD)',
-    'Aerospace & defense': 'project-based megaproject production, closest analogue',
-    'Utilities': 'regulated infrastructure',
-    'Retail': 'labor-intensive consumer services',
-    'Auto manufacturing': 'traditional capital-intensive manufacturing',
-    'Pharma & biotech': 'R&D-intensive regulated science',
+  const RES_NAME = {
+    L1_RD_SALES0: 'R&D / revenue (R₁)', L1_LOG_AI_PAT_STOCK: 'AI patent portfolio (R₂)',
+    L1_AI_WORKER: 'AI-worker share (R₃)',
   };
 
-  /* SIC subgroups inside each industry, so the grid reads the way the companion construction study's
-     does for construction. Labels follow the SEC's own SIC titles. */
-  function subgroup(industry, sic) {
-    sic = +sic;
-    if (industry === 'Construction') {
-      if (sic >= 1500 && sic < 1600) return 'General building contractors';
-      if (sic >= 1600 && sic < 1700) return 'Heavy construction';
-      if (sic >= 1700 && sic < 1800) return 'Special trade contractors';
-      return 'Engineering services';
-    }
-    return ({
-      3523: 'Farm & agricultural machinery (crosses into construction: Deere, AGCO)',
-      3531: 'Construction & mining machinery (Caterpillar, Terex)',
-      3537: 'Industrial trucks & lifts',
-      3711: 'Motor vehicles & car bodies', 3713: 'Truck & bus bodies',
-      3714: 'Motor vehicle parts & accessories',
-      7370: 'Data processing & internet platforms (Alphabet, Meta)',
-      7371: 'IT services & custom programming', 7372: 'Prepackaged software',
-      3570: 'Computer & office equipment (IBM)',
-      3571: 'Electronic computers (Apple, Dell)',
-      3674: 'Semiconductors (NVIDIA, Intel, AMD)',
-      2834: 'Pharmaceutical preparations', 2836: 'Biological products',
-      8731: 'Commercial physical & biological research',
-      4911: 'Electric services', 4931: 'Electric & other services combined',
-      5311: 'Department stores', 5411: 'Grocery stores', 5912: 'Drug stores',
-      3721: 'Aircraft', 3812: 'Search, detection & navigation systems',
-    })[sic] || 'SIC ' + sic;
+  // --------------------------------------------------------------- data pool
+  const DATA = {};
+  const loaded = {};
+  function need(names, fn) {
+    Promise.all(names.map((n) => DATA[n] || (DATA[n] = J(n + '.json')))).then((vs) => {
+      const o = {};
+      names.forEach((n, i) => (o[n] = vs[i]));
+      fn(o);
+    });
   }
 
-  const D = {};                       // loaded JSON lives here
-  const secCompany = (cik) =>
-    `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${String(cik).padStart(10, '0')}&type=10-K`;
-
-  // ---------------------------------------------------------------- routing
-  function show(view, updateHash = true) {
-    $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.view === view));
-    $$('.view').forEach(v => { v.hidden = v.id !== 'view-' + view; });
-    // entering the site keeps a clean URL: the hash is only written on
-    // navigation, or when the visitor already arrived with one
-    if (updateHash && (location.hash || view !== 'filings')) location.hash = view;
+  // --------------------------------------------------------------------- nav
+  $$('#nav button').forEach((b) => b.addEventListener('click', () => show(b.dataset.view)));
+  function show(v) {
+    $$('#nav button').forEach((b) => b.classList.toggle('on', b.dataset.view === v));
+    $$('.view').forEach((s) => (s.hidden = s.id !== 'view-' + v));
+    if (!loaded[v]) { loaded[v] = true; INIT[v](); }
     window.scrollTo({ top: 0 });
   }
-  $('#nav').addEventListener('click', (e) => {
-    const b = e.target.closest('button'); if (b) show(b.dataset.view);
-  });
-  document.addEventListener('click', (e) => {
-    const g = e.target.closest('[data-goto]');
-    if (g) { e.preventDefault(); show(g.dataset.goto); }
-  });
 
-  // ---------------------------------------------------------------- overview
-  function seriesCfg(key, scale, fmt) {
-    const s = D.series[key];
-    return INDUSTRIES.filter(i => s[i]).map(i => ({
-      name: SHORT[i], color: IND_COLOR[i],
-      width: i === 'Construction' ? 3.4 : 1.6,
-      dot: i === 'Construction' ? 3.6 : 0,
-      opacity: i === 'Construction' ? 1 : .75,
-      values: s[i].map(v => v === null ? null : v * scale),
+  // ============================================================== OVERVIEW
+  function initOverview() {
+    need(['headline', 'models', 'diffusion'], ({ headline: H, models: M, diffusion: D }) => {
+      $('#ov-n10k').textContent = fmtInt(H.n10k);
+      $('#ov-span').textContent = 'FY' + H.fy0 + '–' + H.fy1;
+      $('#ov-firms').textContent = fmtInt(H.firms);
+      $('#ov-nai').textContent = fmtInt(H.nai);
+      $('#ov-nc').textContent = fmtInt(H.nC);
+      verdicts(M);
+      const seg = $('#ov-seg');
+      seg.addEventListener('click', (e) => {
+        const b = e.target.closest('button'); if (!b) return;
+        seg.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
+        diffusion(D, b.dataset.k);
+      });
+      diffusion(D, 'C');
+    });
+  }
+
+  function est(M, model, term, fe, y) {
+    const r = M.models.find((m) => m.model === model && m.term === term && m.fe === fe && m.y === (y || 'ln_C'));
+    return r || null;
+  }
+  const pp = (r) => (r.coef > 0 ? '+' : '−') + ' (p ' + pfmt(r.p) + ')';
+
+  function verdicts(M) {
+    const rd = ['H1 L1_RD_SALES0', 'L1_RD_SALES0'], ap = ['H1 L1_LOG_AI_PAT_STOCK', 'L1_LOG_AI_PAT_STOCK'];
+    const h2a = est(M, 'H2 L1_RD_SALES0 x HIGH_AIIE', 'RxM', 'WITHIN'), h2aB = est(M, 'H2 L1_RD_SALES0 x HIGH_AIIE', 'RxM', 'BETWEEN');
+    const h2b = est(M, 'H2 L1_LOG_AI_PAT_STOCK x INTERNAL_DEV', 'RxM', 'WITHIN'), h2bB = est(M, 'H2 L1_LOG_AI_PAT_STOCK x INTERNAL_DEV', 'RxM', 'BETWEEN');
+    const h3r = est(M, 'H3 L1_RD_SALES0 baseline', 'RxL', 'WITHIN'), h3rB = est(M, 'H3 L1_RD_SALES0 baseline', 'RxL', 'BETWEEN');
+    const h3p = est(M, 'H3 L1_LOG_AI_PAT_STOCK baseline', 'RxL', 'WITHIN'), h3pB = est(M, 'H3 L1_LOG_AI_PAT_STOCK baseline', 'RxL', 'BETWEEN');
+    const rows = [
+      ['ok', 'H1 alignment', 'Resources predict specific claims',
+       'R&D ' + pp(est(M, rd[0], rd[1], 'WITHIN')) + ' | ' + pp(est(M, rd[0], rd[1], 'BETWEEN')) +
+       ' · AI patents ' + pp(est(M, ap[0], ap[1], 'WITHIN')) + ' | ' + pp(est(M, ap[0], ap[1], 'BETWEEN')) + ', within | between firms'],
+      ['ok', 'H2 congruence', 'Only where the sector fits the resource',
+       'AI patents × builds in-house ' + pp(h2b) + ' | ' + pp(h2bB) + ' · R&D × high AI exposure ' + pp(h2a) + ' | ' + pp(h2aB)],
+      ['ok', 'H3b chilling', 'Litigation mutes the AI patent path',
+       'AI patents × litigation exposure ' + pp(h3p) + ' | ' + pp(h3pB)],
+      ['half', 'H3a screening', 'Thin: shows for R&D within firm only',
+       'R&D × litigation exposure ' + pp(h3r) + ' within firm, but ' + pp(h3rB) + ' between firms and in no single sector'],
+    ];
+    $('#ov-verdicts').innerHTML = rows.map(([cls, tag, title, sub]) =>
+      '<div class="verdict ' + cls + '"><span class="vtag">' + tag + '</span>' +
+      '<b>' + title + '</b><small>' + sub + '</small></div>').join('');
+  }
+
+  function diffusion(D, k) {
+    const heavy = 'All sectors';
+    const series = D.series.filter((s) => s.name !== heavy).map((s) => ({
+      name: s.name, color: SECTOR_VAR[s.name], width: 1.8, dot: 3, opacity: 0.9,
+      values: s[k],
     }));
+    const all = D.series.find((s) => s.name === heavy);
+    series.push({ name: heavy, color: '--ink', width: 3.2, dot: 3.8, values: all[k] });
+    C.lineChart($('#ch-diffusion'), {
+      years: D.years, series, height: 360, yFmt: (v) => pct(v),
+      yLabel: { C: 'share of 10-Ks with a specific claim', G: 'share with generic AI risk', F: 'share with firm-specific AI risk', AI: 'share with any AI language' }[k],
+      tipFmt: (v, yr, s) => {
+        const row = D.series.find((x) => x.name === s.name);
+        return pct(v, 1) + ' of ' + fmtInt(row.n[D.years.indexOf(yr)]) + ' 10-Ks';
+      },
+    });
   }
 
-  function renderOverview() {
-    const h = D.headline;
-    $('#ov-rank').textContent = h.construction_rank_2025 + ' of 7';
-    $('#ov-adopt').textContent = fmtPct(h.construction_adoption_2025, 1);
-    $('#ov-filings').textContent = h.filings_total.toLocaleString('en-US');
-    $('#ov-eta').textContent = Charts.fmtNum(h.eta2_year, 2).replace('0.', '.') +
-      ' vs ' + Charts.fmtNum(h.eta2_industry, 2).replace('0.', '.');
-
-    Charts.lineChart($('#ch-adoption'), {
-      years: D.series.years, series: seriesCfg('adoption', 100), height: 340,
-      breakAt: 2023, yFmt: v => v + '%', yLabel: 'Firms disclosing AI (%)',
-      tipFmt: v => v.toFixed(1) + '% of firms', everyX: 1,
+  // ============================================================== FINDINGS
+  function initFindings() {
+    need(['models', 'marginal', 'slopes'], ({ models: M, marginal: MG, slopes: SL }) => {
+      h1Forests(M); h2Forests(M);
+      const seg = $('#h3-seg');
+      seg.addEventListener('click', (e) => {
+        const b = e.target.closest('button'); if (!b) return;
+        seg.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
+        h3Lines(MG, b.dataset.fe);
+      });
+      h3Lines(MG, 'WITHIN');
+      const sseg = $('#sl-seg');
+      sseg.addEventListener('click', (e) => {
+        const b = e.target.closest('button'); if (!b) return;
+        sseg.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === b));
+        slopeChart(M, SL, b.dataset.res, b.dataset.fe);
+      });
+      slopeChart(M, SL, 'log AI patent stock', 'WITHIN');
     });
-    Charts.lineChart($('#ch-intensity'), {
-      years: D.series.years, series: seriesCfg('intensity', 1), height: 300,
-      breakAt: 2023, yFmt: v => v, yLabel: 'AI terms per 10,000 words',
-      tipFmt: v => v.toFixed(2) + ' per 10k words',
-    });
-    Charts.lineChart($('#ch-risk'), {
-      years: D.series.years, series: seriesCfg('risk_share', 100), height: 300,
-      breakAt: 2023, ymax: 100, yFmt: v => v + '%',
-      yLabel: 'AI mentions in Item 1A (%)', tipFmt: v => v.toFixed(0) + '% in Item 1A',
-    });
-
-    const thr = [5, 10, 25, 50];
-    const rows = D.crossings.slice().sort((a, b) =>
-      (a.crossed_10pct || 9e9) - (b.crossed_10pct || 9e9));
-    $('#tbl-cross').innerHTML =
-      '<thead><tr><th>Industry</th>' + thr.map(t => `<th class="num">${t}%</th>`).join('') +
-      '<th class="num">FY2025</th></tr></thead><tbody>' +
-      rows.map(r => {
-        const focal = r.industry === 'Construction';
-        return `<tr${focal ? ' style="font-weight:650"' : ''}>` +
-          `<td><span class="seg-dot" style="background:${Charts.css(IND_COLOR[r.industry])}"></span>${SHORT[r.industry]}</td>` +
-          thr.map(t => `<td class="num">${r['crossed_' + t + 'pct'] || '·'}</td>`).join('') +
-          `<td class="num">${fmtPct(r.adoption_2025, 1)}</td></tr>`;
-      }).join('') + '</tbody>';
-
-    const d = D.tests.decomp;
-    $('#ov-note').textContent =
-      `Variance decomposition on ${d.n.toLocaleString('en-US')} operating filings: ` +
-      `fiscal year explains ${fmtPct(d.eta2_year, 1)} of AI disclosure, industry ` +
-      `${fmtPct(d.eta2_industry, 1)}. The diffusion is a calendar phenomenon first ` +
-      `and an industry phenomenon second.`;
   }
 
-  // ---------------------------------------------------------------- industries
-  function renderIndustries() {
-    const host = $('#ind-cards');
-    const years = D.series.years;
-    host.innerHTML = '';
-    // an industry appended to the panel appears here only once its data is baked
-    const byRank = INDUSTRIES.filter(i => D.series.adoption[i]).sort((a, b) => {
-      const av = D.series.adoption[a], bv = D.series.adoption[b];
-      return (bv[bv.length - 1] || 0) - (av[av.length - 1] || 0);
-    });
-    byRank.forEach(ind => {
-      const cr = D.crossings.find(c => c.industry === ind) || {};
-      const comp = D.composition.find(c => c.industry === ind) || {};
-      const brk = D.tests.breaks.find(b => b.industry === ind && b.measure === 'intensity');
-      const adopt = D.series.adoption[ind];
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.innerHTML =
-        `<h2><span class="seg-dot" style="background:${Charts.css(IND_COLOR[ind])}"></span>${ind}` +
-        (ind === 'Construction' ? ' <span class="pill yes">focal</span>' : '') + `</h2>` +
-        `<p class="sub">${REPRESENTS[ind]}</p>` +
-        `<div class="kv">` +
-        `<div><div class="k">firms / firm-years</div><div class="v">${comp.firms} / ${comp.firm_years}</div></div>` +
-        `<div><div class="k">FY2025 adoption</div><div class="v">${fmtPct(adopt[adopt.length - 1], 1)}</div></div>` +
-        `<div><div class="k">crossed 10% / 50%</div><div class="v">${cr.crossed_10pct || '·'} / ${cr.crossed_50pct || '·'}</div></div>` +
-        `<div><div class="k">intensity, FY2023-25 vs FY2019-22</div><div class="v">${brk ? '&times;' + Charts.fmtNum(brk.ratio, 1) : '·'}</div></div>` +
-        `</div>` +
-        `<div class="chart" id="spark-${ind.replace(/\W+/g, '')}"></div>`;
-      host.appendChild(card);
-      Charts.lineChart($('#spark-' + ind.replace(/\W+/g, ''), card), {
-        years, height: 170,
-        series: [{ name: SHORT[ind], color: IND_COLOR[ind], width: 2.6, dot: 3,
-                   values: adopt.map(v => v === null ? null : v * 100) }],
-        breakAt: 2023, ymax: 100, yFmt: v => v + '%', everyX: 2,
-        tipFmt: v => v.toFixed(1) + '% of firms',
+  function fpoint(r, name, hollow) {
+    return { est: r.coef, se: r.se, hollow, name,
+             color: hollow ? '--ink-2' : '--accent',
+             tip: 'estimate ' + r.coef.toFixed(3).replace(/^(-?)0\./, '$1.') + ', SE ' + r.se.toFixed(3).replace(/^0\./, '.') +
+                  ', p ' + pfmt(r.p) + '<br>' + fmtInt(r.n) + ' firm-years, ' + fmtInt(r.firms) + ' firms' };
+  }
+
+  function h1Forests(M) {
+    const host = $('#h1-forests'); host.innerHTML = '';
+    [['H1 L1_RD_SALES0', 'L1_RD_SALES0'], ['H1 L1_LOG_AI_PAT_STOCK', 'L1_LOG_AI_PAT_STOCK'], ['H1 L1_AI_WORKER', 'L1_AI_WORKER']]
+      .forEach(([model, term]) => {
+        const div = document.createElement('div');
+        div.innerHTML = '<h3 class="mini-h">' + RES_NAME[term] + '</h3><div class="chart"></div>';
+        host.appendChild(div);
+        const rows = [['ln_C', 'claims (C)', true], ['ln_G', 'generic risk (G)', false], ['ln_F', 'firm risk (F)', false]]
+          .map(([y, label, bold]) => {
+            const w = est(M, model, term, 'WITHIN', y), b = est(M, model, term, 'BETWEEN', y);
+            return w && b ? { label, bold, points: [fpoint(w, 'within firm'), fpoint(b, 'between firms', true)] } : null;
+          }).filter(Boolean);
+        C.forest(div.querySelector('.chart'), { rows, labelW: 96, xFmt: (t) => String(t).replace(/^(-?)0\./, '$1.') });
+      });
+    C.legend(host, [{ name: 'within firm (filled)', color: '--accent' }, { name: 'between firms (hollow)', color: '--ink-2' }]);
+  }
+
+  function h2Forests(M) {
+    const host = $('#h2-forests'); host.innerHTML = '';
+    [{ model: 'H2 L1_LOG_AI_PAT_STOCK x INTERNAL_DEV', main: 'L1_LOG_AI_PAT_STOCK',
+       title: 'AI patents × the sector builds AI in-house (S₂)',
+       rows: [['L1_LOG_AI_PAT_STOCK', 'AI patents alone'], ['RxM', '× builds in-house']] },
+     { model: 'H2 L1_RD_SALES0 x HIGH_AIIE', main: 'L1_RD_SALES0',
+       title: 'R&D × high industry AI exposure (S₁)',
+       rows: [['L1_RD_SALES0', 'R&D alone'], ['RxM', '× high AI exposure']] }]
+      .forEach((cfgRow) => {
+        const div = document.createElement('div');
+        div.innerHTML = '<h3 class="mini-h">' + cfgRow.title + '</h3><div class="chart"></div>';
+        host.appendChild(div);
+        const rows = cfgRow.rows.map(([term, label]) => {
+          const w = est(M, cfgRow.model, term, 'WITHIN'), b = est(M, cfgRow.model, term, 'BETWEEN');
+          return w && b ? { label, bold: term === 'RxM', points: [fpoint(w, 'within firm'), fpoint(b, 'between firms', true)] } : null;
+        }).filter(Boolean);
+        C.forest(div.querySelector('.chart'), { rows, labelW: 128, xFmt: (t) => String(t).replace(/^(-?)0\./, '$1.') });
+      });
+  }
+
+  function h3Lines(MG, fe) {
+    const host = $('#h3-lines'); host.innerHTML = '';
+    MG.filter((m) => m.fe === fe).forEach((m) => {
+      const div = document.createElement('div');
+      div.innerHTML = '<h3 class="mini-h">' + (m.resource === 'R&D / revenue' ? 'R&D / revenue (R₁)' : 'AI patent portfolio (R₂)') + '</h3><div class="chart"></div>';
+      host.appendChild(div);
+      C.bandLine(div.querySelector('.chart'), {
+        x: m.x, xFmt: (v) => pct(v, 1), yFmt: (v) => String(+v.toFixed(3)).replace(/^(-?)0\./, '$1.'),
+        yLabel: 'effect on ln(1 + C)',
+        series: [{ name: m.resource, eff: m.eff, lo: m.lo, hi: m.hi,
+                   color: m.resource === 'R&D / revenue' ? '--accent' : '--c2' }],
+        tipFmt: (x, e2, lo, hi) => 'suit rate ' + pct(x, 1) + '<br>effect ' + e2.toFixed(3).replace(/^(-?)0\./, '$1.') +
+                 ' [' + lo.toFixed(3).replace(/^(-?)0\./, '$1.') + ', ' + hi.toFixed(3).replace(/^(-?)0\./, '$1.') + ']',
       });
     });
   }
 
-  // ---------------------------------------------------------------- claims
-  function renderClaims() {
-    const host = $('#claims-body');
-    if (!D.claims) {
-      host.innerHTML = '<div class="card"><p class="sub">The three-model coding ' +
-        'run has not been baked into the site yet. Run the analysis, then ' +
-        '<code>build_data.py</code>.</p></div>';
-      return;
-    }
-    const C = D.claims;
-    const s = C.summary;
-    const stats = document.createElement('div');
-    stats.className = 'stats';
-    stats.innerHTML =
-      `<div class="stat accent"><div class="v">${s.passages_coded.toLocaleString('en-US')}</div>` +
-      `<div class="k">passages coded by all three models</div></div>` +
-      `<div class="stat"><div class="v">${fmtPct(s.mean_pairwise_agreement, 0)}</div>` +
-      `<div class="k">mean pairwise agreement between labs</div></div>` +
-      `<div class="stat"><div class="v">${fmtPct(s.unanimous_share, 0)}</div>` +
-      `<div class="k">passages with a unanimous 3-of-3 label</div></div>`;
-    host.appendChild(stats);
-
-    const order = ['DEPLOYMENT', 'EXPLORATION', 'EXPOSURE', 'GOVERNANCE', 'OTHER', 'UNCLEAR'];
-    const colors = { DEPLOYMENT: '--c2', EXPLORATION: '--c1', EXPOSURE: '--risk',
-                     GOVERNANCE: '--c3', OTHER: '--neutral', UNCLEAR: '--line-2' };
-    const pats = { DEPLOYMENT: 'solid', EXPLORATION: 'hatch', EXPOSURE: 'cross',
-                   GOVERNANCE: 'dots', OTHER: 'solid', UNCLEAR: 'solid' };
-
-    ['2023_on', 'pre_2023'].forEach(period => {
-      const rows = C.contrast.filter(r => r.period === period);
-      if (!rows.length) return;
-      const byInd = INDUSTRIES.filter(i => rows.some(r => r.industry === i));
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.innerHTML = `<h2>${period === '2023_on' ? 'FY2023 on: after ChatGPT' : 'FY2014-2022: before ChatGPT'}</h2>` +
-        `<p class="sub">Claim mix of the sampled passages per industry.</p><div class="chart"></div>`;
-      host.appendChild(card);
-      Charts.stackedBar($('.chart', card), {
-        categories: byInd, labels: byInd.map(i => SHORT[i]), height: 330,
-        counts: byInd.map(i => rows.find(r => r.industry === i).n_passages),
-        series: order.map(c => ({
-          name: c.toLowerCase(), color: colors[c], pat: pats[c],
-          values: byInd.map(i => rows.find(r => r.industry === i)['share_' + c.toLowerCase()] || 0),
-        })),
-        yLabel: 'Share of passages',
-      });
-    });
-
-    const post = C.contrast.filter(r => r.period === '2023_on');
-    if (post.length) {
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.innerHTML = '<h2>Substance against exposure</h2>' +
-        '<p class="sub">Deployment passages per exposure passage, FY2023 on. ' +
-        'Above 1: the industry talks more about using AI than about being ' +
-        'threatened by it.</p><div class="chart"></div>';
-      host.appendChild(card);
-      Charts.barsH($('.chart', card), {
-        labelW: 170,
-        items: post.slice().sort((a, b) => b.deployment_to_exposure - a.deployment_to_exposure)
-          .map(r => ({
-            label: SHORT[r.industry], value: r.deployment_to_exposure,
-            color: IND_COLOR[r.industry],
-            display: Charts.fmtNum(r.deployment_to_exposure, 2),
-            tip: `${fmtPct(r.share_deployment, 0)} deployment · ${fmtPct(r.share_exposure, 0)} exposure`,
-          })),
-      });
-    }
-  }
-
-  // ---------------------------------------------------------------- filings grid
-  /* One cell per firm-year, every cell a link to the 10-K on sec.gov. All 719
-     of the companion construction study's filings fit on one page; 13,500 do not, so one industry
-     renders at a time (searching looks across all seven), in chunks. */
-  const secDoc = (cik, adsh, doc) =>
-    `https://www.sec.gov/Archives/edgar/data/${cik}/${adsh.replace(/-/g, '')}/` +
-    (doc || `${adsh}-index.htm`);
-
-  const INV = { q: '', ai: false,
-                ind: new URLSearchParams(location.search).get('ind') || 'Construction' };
-
-  // ----------------------------------------------------- filing review panel
-  /* Click a square with AI language: instead of jumping straight into the
-     10-K, a panel lists EVERY AI sentence of that filing, each with its own
-     verified deep link, plus one button for the whole document. Sentence
-     files load lazily, one JSON per industry. */
-  const SLUG = (ind) => ind.replace(/\W+/g, '_').replace(/^_+|_+$/g, '').toLowerCase();
-
-  /* Two-tone highlighting in the review panel: the whole sentence sits on its
-     own soft ground (css .m-txt), and the AI terms themselves pop in a second
-     colour. sec.gov's own fragment highlight cannot be styled from here; this
-     is the panel-side twin of it. */
-  const ESCH = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-  const AI_RX = new RegExp(
-    ['artificial[\\s-]+intelligence', 'machine[\\s-]+learning',
-     'deep[\\s-]+learning', 'neural[\\s-]+network(?:s)?',
-     'natural[\\s-]+language[\\s-]+processing', 'computer[\\s-]+vision',
-     'predictive[\\s-]+analytics', 'generative[\\s-]*AI',
-     'large[\\s-]+language[\\s-]+model(?:s)?', 'foundation[\\s-]+model(?:s)?',
-     '\\bLLMs?\\b', '\\bChatGPT\\b', '\\bOpenAI\\b', 'chat\\s?bots?',
-     'A\\.I\\.', '\\bAI\\b', '\\bAGI\\b', '\\bNLP\\b',
-     '\\bGPT-?[3-5o]?\\b'].join('|'), 'gi');
-  const hlKw = (s) => ESCH(s).replace(AI_RX, m => `<mark class="kw">${m}</mark>`);
-
-  const sentCache = {};
-  async function sentencesFor(ind) {
-    if (!(ind in sentCache)) {
-      sentCache[ind] = await fetch('data/sentences/' + SLUG(ind) + '.json')
-        .then(r => r.ok ? r.json() : {}).catch(() => ({}));
-    }
-    return sentCache[ind];
-  }
-
-  /* Verified scroll-to-text anchors, one JSON per industry, loaded lazily so
-     the first paint never waits for them (the monolithic anchors.json ran to
-     15 MB). Until an industry's file lands, its links open the document top --
-     the documented progressive-enhancement behaviour -- and the grid's hrefs
-     are upgraded in place the moment the file arrives. */
-  const anchLoaded = {};
-  function loadAnchors(ind) {
-    const slug = SLUG(ind);
-    if (!anchLoaded[slug]) {
-      anchLoaded[slug] = fetch('data/anchors/' + slug + '.json')
-        .then(r => r.ok ? r.json() : {})
-        .then(a => { Object.assign(D.anchors, a); upgradeAnchors(ind); })
-        .catch(() => {});
-    }
-    return anchLoaded[slug];
-  }
-  function upgradeAnchors(ind) {
-    $$('a.inv-cell[data-cik]').forEach(a => {
-      if (a.dataset.ind !== ind || a.dataset.hl) return;
-      const anch = D.anchors[`f:${a.dataset.cik}:${a.dataset.fy}`];
-      if (anch && anch.f) { a.href = a.href.split('#')[0] + anch.f; a.dataset.hl = '1'; }
+  function slopeChart(M, SL, res, fe) {
+    const rows = SL.filter((s) => s.resource === res && s.fe === fe && s.spec === 'H1 slopes' &&
+                                  s.kind === 'slope' && s.firms >= 20 && s.industry !== 'All sectors')
+      .sort((a, b) => b.coef - a.coef)
+      .map((s) => ({ label: s.industry, points: [{
+        est: s.coef, se: s.se, name: s.mode === 'in-house' ? 'builds AI in-house' : 'buys AI',
+        color: s.mode === 'in-house' ? '--c2' : '--c3',
+        tip: 'slope ' + s.coef.toFixed(3).replace(/^(-?)0\./, '$1.') + ', p ' + pfmt(s.p) +
+             '<br>' + fmtInt(s.firms) + ' firms hold the resource' }] }));
+    C.forest($('#ch-slopes'), { rows, w: 760, labelW: 170, rowH: 30, xFmt: (t) => String(t).replace(/^(-?)0\./, '$1.') });
+    C.legend($('#ch-slopes'), [{ name: 'sector builds AI in-house', color: '--c2' }, { name: 'sector buys AI', color: '--c3' }]);
+    need(['models'], ({ models: MM }) => {
+      const wd = MM.wald.filter((w) => w.resource === res && w.spec === 'H1 slopes' && w.kind === 'slope');
+      const one = wd.find((w) => w.fe === fe);
+      $('#sl-note').textContent = one
+        ? 'Sectors drawn: at least 20 firms hold the resource. Wald test that the drawn slopes are equal, this design: p ' +
+          pfmt(one.p) + ' across ' + one.industries + ' sectors.'
+        : '';
     });
   }
 
-  const SEC_LABEL = { item1: 'Item 1 · Business', item1a: 'Item 1A · Risk Factors',
-    item1b: 'Item 1B', item2: 'Item 2 · Properties', item3: 'Item 3 · Legal',
-    item5: 'Item 5 · Market', item7: 'Item 7 · MD&A', item7a: 'Item 7A',
-    item8: 'Item 8', item9a: 'Item 9A', full: 'unsegmented', unsegmented: 'unsegmented' };
-
-  function closeModal() {
-    const m = $('.modal-back');
-    if (m) m.remove();
-    document.removeEventListener('keydown', escClose);
-  }
-  function escClose(e) { if (e.key === 'Escape') closeModal(); }
-
-  async function openReview(cell) {
-    const { name, fy } = cell.dataset;
-    const cik = cell.dataset.cik, ind = cell.dataset.ind;
-    const docUrl = cell.href.split('#')[0];
-    // sentence anchors ride in the industry's lazy anchor file; wait for it so
-    // the per-sentence deep links are there on first open
-    const [sentMap] = await Promise.all([sentencesFor(ind), loadAnchors(ind)]);
-    const sents = sentMap[`${cik}:${fy}`] || [];
-    const wrap = document.createElement('div');
-    wrap.className = 'modal-back';
-    wrap.innerHTML =
-      `<div class="modal" role="dialog" aria-label="AI sentences in this filing">
-        <div class="modal-head">
-          <h3>${name} · FY${fy}</h3>
-          <span class="m-meta">${sents.length} AI sentence${sents.length === 1 ? '' : 's'} ·
-            ${cell.dataset.n} core term hit${cell.dataset.n === '1' ? '' : 's'}</span>
-          <a class="modal-open" target="_blank" rel="noopener" href="${cell.href}">Open the 10-K ↗</a>
-          <button class="modal-x" aria-label="Close">×</button>
-        </div>
-        <div class="modal-body">` +
-      (sents.length ? sents.map(([sec, s], i) => {
-        const anch = D.anchors && D.anchors[`s:${cik}:${fy}:${i}`];
-        return `<div class="m-sent"><div class="m-txt">${hlKw(s)}</div>
-          <div class="m-foot"><span>${SEC_LABEL[sec] || sec}</span>
-          <a target="_blank" rel="noopener" href="${docUrl}${anch ? anch.f : ''}">
-            open at this sentence${anch ? '' : ' (top of document)'} ↗</a></div></div>`;
-      }).join('')
-        : `<p class="m-note">The ${cell.dataset.n} AI term hit${cell.dataset.n === '1' ? '' : 's'}
-           in this filing sit inside passages longer than the study's sentence
-           bounds (typically a long run-on risk-factor list), so no clean
-           sentence could be extracted. Open the 10-K to read them in place.</p>`) +
-      `<p class="m-note">Every link opens the original filing on sec.gov; where a
-        verified anchor exists the browser scrolls to the sentence and highlights
-        it.</p></div></div>`;
-    document.body.appendChild(wrap);
-    wrap.addEventListener('click', (e) => {
-      if (e.target === wrap || e.target.closest('.modal-x')) closeModal();
+  // ============================================================== SECTORS
+  function initSectors() {
+    need(['sectors', 'diffusion'], ({ sectors: S, diffusion: D }) => {
+      const host = $('#sec-cards');
+      host.innerHTML = '<div class="sec-grid">' + S.map((s) => {
+        const d = D.series.find((x) => x.name === s.name);
+        return '<div class="card sec-card"><div class="sec-head"><h2>' + esc(s.name) + '</h2>' +
+          '<span class="pill ' + (s.mode === 'in-house' ? 'yes' : '') + '">' +
+          (s.mode === 'in-house' ? 'builds AI in-house' : 'buys AI') + '</span></div>' +
+          '<div class="kv">' +
+          '<div><div class="k">firms / firm-years</div><div class="v">' + fmtInt(s.firms) + ' / ' + fmtInt(s.fy) + '</div></div>' +
+          '<div><div class="k">10-Ks with a specific claim</div><div class="v">' + pct(s.anyC, 1) + '</div></div>' +
+          '<div><div class="k">with generic AI risk</div><div class="v">' + pct(s.anyG, 1) + '</div></div>' +
+          '<div><div class="k">median R&D / revenue</div><div class="v">' + (s.rd_med === 0 ? '0' : String(+s.rd_med.toFixed(2)).replace(/^0\./, '.')) + '</div></div>' +
+          '<div><div class="k">firm-years reporting R&D</div><div class="v">' + pct(s.rd_pos) + '</div></div>' +
+          '<div><div class="k">with an AI patent portfolio</div><div class="v">' + pct(s.pat) + '</div></div>' +
+          '<div><div class="k">mean litigation exposure</div><div class="v">' + pct(s.suit, 1) + '</div></div>' +
+          '<div><div class="k">high industry AI exposure</div><div class="v">' + (s.hi_aiie === null ? 'n/a' : pct(s.hi_aiie)) + '</div></div>' +
+          '</div><div class="sec-spark">' + C.spark(d.C.map((v) => v || 0), { color: SECTOR_VAR[s.name], w: 220, h: 34 }) +
+          '<span>share of 10-Ks with a specific claim, FY' + D.years[0] + '–' + D.years[D.years.length - 1] + '</span></div></div>';
+      }).join('') + '</div>';
     });
-    document.addEventListener('keydown', escClose);
   }
 
-  function renderFilings() {
-    const sel = $('#inv-ind');
-    if (!sel.options.length) {
-      const avail = INDUSTRIES.filter(i => D.inventory.firms.some(f => f.industry === i));
-      sel.innerHTML = avail.map(i =>
-        `<option${i === INV.ind ? ' selected' : ''}>${i}</option>`).join('');
-      sel.addEventListener('change', () => { INV.ind = sel.value; renderFilings(); });
-      $('#inv-search').addEventListener('input', (e) => {
-        INV.q = e.target.value.toLowerCase().trim(); renderFilings();
-      });
-      $('#inv-ai').addEventListener('change', (e) => { INV.ai = e.target.checked; renderFilings(); });
-      $('#inv-grid').addEventListener('mouseover', (e) => {
-        const a = e.target.closest('a.inv-cell'); if (!a) return;
-        const q = a.dataset.q ? `<q>${a.dataset.q}</q>` : '';
-        Charts.showTip(`<b>${a.dataset.name}</b> · FY${a.dataset.fy}<br>` +
-          (a.dataset.lvl === 'x' ? 'outside the operating screen this year'
-            : `${a.dataset.n} core AI terms`) + q +
-          (+a.dataset.n > 0
-            ? `<i>click to review every AI sentence, each one a link into the 10-K</i>`
-            : `<i>click to open the 10-K on sec.gov</i>`), e);
-      });
-      $('#inv-grid').addEventListener('mouseout', Charts.hideTip);
-      $('#inv-grid').addEventListener('click', (e) => {
-        const a = e.target.closest('a.inv-cell');
-        if (!a || !(+a.dataset.n > 0)) return;          // no-AI cells stay direct links
-        if (e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
-        e.preventDefault();
-        Charts.hideTip();
-        openReview(a);
-      });
-    }
-    sel.disabled = !!INV.q;
-
-    let firms = INV.q
-      ? D.inventory.firms.filter(f => f.name.toLowerCase().includes(INV.q))
-      : D.inventory.firms.filter(f => f.industry === INV.ind);
-    if (INV.ai) firms = firms.filter(f => f.cells.some(c => c.lvl !== 'x' && c.lvl > 0));
-    $('#inv-count').textContent = firms.length.toLocaleString('en-US') + ' firms';
-
-    const years = D.inventory.years;
-    const head = `<div class="inv-row inv-head"><span></span>` +
-      years.map(y => `<span class="yh">'${String(y).slice(2)}</span>`).join('') +
-      `<span class="yh">AI</span></div>`;
-
-    const rowOf = (f) => {
-      const byFy = {};
-      f.cells.forEach(c => { byFy[c.fy] = c; });
-      const total = f.cells.reduce((s, c) => s + (c.lvl === 'x' ? 0 : c.n), 0);
-      const cells = years.map(y => {
-        const c = byFy[y];
-        if (!c) return '<span class="inv-cell"></span>';
-        const q = (c.q || '').replace(/"/g, '&quot;');
-        const anch = (D.anchors && D.anchors[`f:${f.cik}:${y}`]) || null;
-        return `<a class="inv-cell lv-${c.lvl}" target="_blank" rel="noopener"
-          href="${secDoc(f.cik, c.adsh, c.doc)}${anch ? anch.f : ''}"
-          data-name="${f.name.replace(/"/g, '&quot;')}" data-cik="${f.cik}"
-          data-ind="${f.industry}"
-          data-fy="${y}" data-n="${c.n}" data-lvl="${c.lvl}" data-q="${q}"
-          ${anch ? 'data-hl="1"' : ''}
-          aria-label="${f.name} FY${y}, review its AI sentences"></a>`;
+  // ============================================================== FILINGS
+  const SENT = {};
+  function sentFor(slug) {
+    return SENT[slug] || (SENT[slug] = J('sentences/' + slug + '.json').catch(() => ({})));
+  }
+  function initFilings() {
+    need(['firms', 'diffusion'], ({ firms: F, diffusion: D }) => {
+      const sel = $('#inv-ind');
+      const sectors = Object.keys(SLUG);
+      sel.innerHTML = sectors.map((s) => '<option>' + esc(s) + '</option>').join('');
+      sel.value = 'Software & IT services';
+      const years = []; for (let y = 2014; y <= 2025; y++) years.push(y);
+      const render = () => invRender(F, years);
+      sel.addEventListener('change', render);
+      $('#inv-c').addEventListener('change', render);
+      let t = null;
+      $('#inv-search').addEventListener('input', () => { clearTimeout(t); t = setTimeout(render, 150); });
+      render();
+    });
+  }
+  function secUrl(cik, adsh) {
+    const plain = adsh.replace(/-/g, '');
+    return 'https://www.sec.gov/Archives/edgar/data/' + cik + '/' + plain + '/' + adsh + '-index.htm';
+  }
+  function invRender(F, years) {
+    const q = $('#inv-search').value.trim().toLowerCase();
+    const onlyC = $('#inv-c').checked;
+    const sector = $('#inv-ind').value;
+    let rows = q ? F.filter((f) => f.name.toLowerCase().includes(q)) : F.filter((f) => f.ind === sector);
+    if (onlyC) rows = rows.filter((f) => f.years.some((y) => y[3] > 0));
+    $('#inv-count').textContent = fmtInt(rows.length) + ' firms';
+    const grid = $('#inv-grid');
+    const cap = 220;
+    const head = '<div class="inv-row inv-head"><span></span>' +
+      years.map((y) => '<span class="yh">' + String(y).slice(2) + '</span>').join('') + '<span class="yh">claims</span></div>';
+    const html = rows.slice(0, cap).map((f) => {
+      const by = {}; f.years.forEach((y) => (by[y[0]] = y));
+      const totC = f.years.reduce((a, y) => a + y[3], 0);
+      const cells = years.map((yr) => {
+        const y = by[yr];
+        if (!y) return '<span class="inv-cell"></span>';
+        const [fy, op, nai, nC] = y;
+        const lv = !op ? 'x' : nai === 0 ? 0 : nC === 0 ? 1 : nC <= 2 ? 2 : 3;
+        return '<a class="inv-cell lv-' + lv + '" href="' + secUrl(f.cik, y[7]) + '" target="_blank" rel="noopener"' +
+          ' data-cik="' + f.cik + '" data-fy="' + fy + '" data-ind="' + esc(f.ind) + '"' +
+          ' data-n="' + nai + '" data-c="' + nC + '" data-g="' + y[4] + '" data-f="' + y[5] + '"' +
+          ' aria-label="' + esc(f.name) + ' FY' + fy + '"></a>';
       }).join('');
-      const ind = INV.q ? ` <small style="color:var(--ink-3)">· ${SHORT[f.industry]}</small>` : '';
-      return `<div class="inv-row">` +
-        `<a class="inv-name" style="text-decoration:none" target="_blank" rel="noopener"
-           href="${secCompany(f.cik)}" title="${f.name} on EDGAR">${f.name}${ind}</a>` +
-        cells +
-        `<span class="inv-tot${total ? '' : ' zero'}">${total || ''}</span></div>`;
-    };
-
-    let html = head;
-    if (INV.q) {                       // searching spans industries: flat list
-      firms = firms.slice().sort((a, b) => a.name.localeCompare(b.name));
-      html += firms.map(rowOf).join('');
-    } else {                           // one industry: grouped by SIC subgroup
-      const groups = new Map();
-      firms.forEach(f => {
-        const g = subgroup(f.industry, f.sic);
-        if (!groups.has(g)) groups.set(g, []);
-        groups.get(g).push(f);
+      return '<div class="inv-row"><button class="inv-name" title="' + esc(f.name) + '">' + esc(f.name) + '</button>' +
+        cells + '<span class="inv-tot' + (totC ? '' : ' zero') + '">' + (totC || '') + '</span></div>';
+    }).join('');
+    grid.innerHTML = head + html + (rows.length > cap
+      ? '<p class="m-note">Showing the first ' + cap + ' of ' + fmtInt(rows.length) + ' firms; refine the search to see the rest.</p>' : '');
+    grid.querySelectorAll('a.inv-cell').forEach((a) => {
+      a.addEventListener('mousemove', async (e) => {
+        const d = a.dataset;
+        const base = '<b>' + esc(a.getAttribute('aria-label')) + '</b><br>' +
+          d.n + ' AI sentences · ' + d.c + ' specific claims, ' + d.g + ' generic risk, ' + d.f + ' firm risk';
+        C.showTip(base, e);
+        if (+d.n > 0) {
+          const s = (await sentFor(SLUG[d.ind]))[d.cik + '_' + d.fy];
+          if (s) C.showTip(base + '<q>' + esc(s.s) + '</q><i>' +
+            (s.c ? 'a specific claim, ' + s.pts + ' of 6 points' : 'the filing’s first coded AI sentence') +
+            ' · click to open the 10-K</i>', e);
+        }
       });
-      [...groups.keys()].sort().forEach(g => {
-        const list = groups.get(g).sort((a, b) => a.name.localeCompare(b.name));
-        html += `<div class="inv-seg">${g}<span>${list.length} firms</span></div>`;
-        html += list.map(rowOf).join('');
-      });
-    }
-    $('#inv-grid').innerHTML = html;
-    // fetch this industry's verified anchors (no-op if already here); the
-    // grid's links upgrade in place when they land
-    if (!INV.q) loadAnchors(INV.ind);
-    else INDUSTRIES.forEach(loadAnchors);
+      a.addEventListener('mouseleave', C.hideTip);
+    });
   }
 
-  // ---------------------------------------------------------------- statistics
-  /* A point-with-interval (forest) chart: the one shape charts.js lacks.
-     Significant intervals (excluding zero) take the accent; the rest stay
-     muted, so the eye finds the real effects first. */
-  function forest(host, cfg) {
-    const NS = 'http://www.w3.org/2000/svg';
-    host.innerHTML = '';
-    const rowH = 26, labelW = cfg.labelW || 190, w = 780;
-    const m = { t: 8, r: 24, b: 34, l: labelW };
-    const h = cfg.items.length * rowH + m.t + m.b;
-    const svg = document.createElementNS(NS, 'svg');
-    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-    svg.setAttribute('width', '100%');
-    host.appendChild(svg);
-    const el = (t, a) => { const e = document.createElementNS(NS, t);
-      for (const k in a) e.setAttribute(k, a[k]); svg.appendChild(e); return e; };
-    const lo = Math.min(0, ...cfg.items.map(d => d.lo));
-    const hi = Math.max(0, ...cfg.items.map(d => d.hi));
-    const pad = (hi - lo) * .08 || 1;
-    const xS = v => m.l + ((v - lo + pad) / (hi - lo + 2 * pad)) * (w - m.l - m.r);
-    el('line', { x1: xS(0), y1: m.t, x2: xS(0), y2: h - m.b,
-                 stroke: Charts.css('--ink-3'), 'stroke-width': 1,
-                 'stroke-dasharray': '3 3' });
-    cfg.items.forEach((d, i) => {
-      const y = m.t + i * rowH + rowH / 2;
-      const sig = d.lo > 0 || d.hi < 0;
-      const color = Charts.css(d.color || (sig ? '--accent' : '--ink-3'));
-      el('text', { x: labelW - 10, y: y + 4, class: 'ax-txt',
-                   'text-anchor': 'end',
-                   style: d.bold ? 'font-weight:650' : '' }).textContent = d.label;
-      el('line', { x1: xS(d.lo), y1: y, x2: xS(d.hi), y2: y, stroke: color,
-                   'stroke-width': 2, 'stroke-linecap': 'round' });
-      const c = el('circle', { cx: xS(d.v), cy: y, r: 4.4, fill: color,
-                               stroke: Charts.css('--surface'),
-                               'stroke-width': 1.2 });
-      c.addEventListener('mousemove', ev => Charts.showTip(
-        `<b>${d.label}</b><br>${d.tip}`, ev));
-      c.addEventListener('mouseleave', Charts.hideTip);
+  // ============================================================== METHOD
+  function initMethod() {
+    need(['agreement'], ({ agreement: A }) => {
+      const fields = Array.from(new Set(A.map((r) => r.field)));
+      const pairs = Array.from(new Set(A.map((r) => r.pair))).filter((p) => p !== 'no_majority');
+      const name = { 'ministral-phi4': 'Ministral × Phi-4', 'ministral-qwen': 'Ministral × Qwen',
+                     'phi4-qwen': 'Phi-4 × Qwen', unanimous: 'all three agree' };
+      const fname = { about: 'about AI?', cap: 'capability', risk: 'risk kind', tone: 'tone', spec: 'specificity' };
+      $('#agree-tbl').innerHTML = '<div class="tablewrap"><table class="data"><thead><tr><th>coder pair</th>' +
+        fields.map((f) => '<th class="num">' + (fname[f] || f) + '</th>').join('') + '</tr></thead><tbody>' +
+        pairs.map((p) => '<tr><td>' + (name[p] || p) + '</td>' + fields.map((f) => {
+          const r = A.find((x) => x.pair === p && x.field === f);
+          return '<td class="num">' + (r ? pct(r.agree, 1) : '—') + '</td>';
+        }).join('') + '</tr>').join('') + '</tbody></table></div>' +
+        '<p class="note">Pairwise agreement of the three coders on every coded sentence; labels need 2-of-3.</p>';
     });
-    el('text', { x: m.l + (w - m.l - m.r) / 2, y: h - 10, class: 'ax-lab',
-                 'text-anchor': 'middle' }).textContent = cfg.xlab;
+    scorer();
   }
 
-  const AME_LABEL = {
-    log_assets: 'Size (log assets)', roa: 'Profitability (ROA)',
-    leverage: 'Leverage', cap_intensity: 'Capital intensity',
-    rd_intensity: 'R&D intensity', has_rd: 'Reports R&D at all',
-    log_words: 'Filing length (log words)',
-  };
-
-  function renderStats() {
-    const host = $('#stats-body');
-    if (!D.firmstats) {
-      host.innerHTML = '<div class="card"><p class="sub">Run analysis 03 and ' +
-        '<code>build_data.py</code> to bake this view.</p></div>';
-      return;
-    }
-    const S = D.firmstats, sm = S.summary;
-    host.innerHTML =
-      `<div class="stats">
-        <div class="stat accent"><div class="v">${sm.n_firm_years.toLocaleString('en-US')}</div>
-          <div class="k">firm-years with XBRL financials, ${sm.n_firms.toLocaleString('en-US')} firms</div></div>
-        <div class="stat"><div class="v">+${(sm.ame_log_assets * 100).toFixed(1)} pp</div>
-          <div class="k">probability of disclosing AI per log-asset of size</div></div>
-        <div class="stat"><div class="v">${sm.n_event_pairs}</div>
-          <div class="k">adopters matched to same-industry, same-size non-disclosers</div></div>
-        <div class="stat"><div class="v">p = ${sm.growth_on_ai_any_p.toFixed(2)}</div>
-          <div class="k">forward revenue growth on AI disclosure, an honest null</div></div>
-      </div>
-
-      <div class="card"><h2>Who talks: what moves the probability of disclosing AI</h2>
-        <p class="sub">Average marginal effects from a logit with year and industry
-        fixed effects, SE clustered by firm. Blue: the 95% interval excludes zero.</p>
-        <div id="st-ame" class="chart"></div></div>
-
-      <div class="grid2">
-        <div class="card"><h2>The size gradient, before and after ChatGPT</h2>
-          <p class="sub">Share of firms disclosing AI by asset quintile. The wave
-          did not democratize the talk: the gradient steepened.</p>
-          <div id="st-grad" class="chart"></div></div>
-        <div class="card"><h2>Does the talk line up with R&D?</h2>
-          <p class="sub">AI intensity on R&D intensity within each industry
-          (standardized), year FE. Only utilities and software line up;
-          construction runs slightly negative: talk and action are separate
-          things in the focal industry.</p>
-          <div id="st-rd" class="chart"></div></div>
-      </div>
-
-      <div class="card"><h2>What follows the first AI disclosure</h2>
-        <p class="sub">Adopters against size-matched same-industry firms not yet
-        disclosing, in event time. Adopters were already healthier BEFORE
-        disclosing and show no jump after: selection, not a measurable
-        performance kick: forward growth on disclosure is a null
-        (p = ${sm.growth_on_ai_any_p.toFixed(2)}), and risk-heavy framing predicts
-        nothing either (p = ${sm.riskshare_growth_p.toFixed(2)}).</p>
-        <div class="grid2">
-          <div><div id="st-ev-rev" class="chart"></div></div>
-          <div><div id="st-ev-roa" class="chart"></div></div>
-        </div></div>`;
-
-    forest($('#st-ame'), {
-      xlab: 'Effect on P(discloses AI), percentage points',
-      items: S.ame.map(r => ({
-        label: AME_LABEL[r.term] || r.term, v: r.ame * 100,
-        lo: r.ci_lo * 100, hi: r.ci_hi * 100,
-        tip: `${(r.ame * 100).toFixed(1)} pp [${(r.ci_lo * 100).toFixed(1)}, ${(r.ci_hi * 100).toFixed(1)}]`,
-      })),
-    });
-
-    const qs = [1, 2, 3, 4, 5];
-    Charts.lineChart($('#st-grad'), {
-      years: qs, height: 250, everyX: 1,
-      series: [0, 1].map(post => ({
-        name: post ? 'FY2023-2025' : 'FY2014-2022',
-        color: post ? '--accent' : '--neutral', width: post ? 2.6 : 1.8,
-        values: qs.map(q => {
-          const r = S.size_gradient.find(g => g.post === post && g.size_q === q);
-          return r ? r.pct_any_ai * 100 : null;
-        }),
-      })),
-      ymax: 100, yFmt: v => v + '%', yLabel: 'Firms disclosing AI (%)',
-      tipFmt: (v, q) => `size quintile ${q}: ${v.toFixed(0)}% disclose`,
-    });
-
-    forest($('#st-rd'), {
-      labelW: 150,
-      xlab: 'AI intensity per SD of R&D intensity (SD)',
-      items: S.rd_link.slice().sort((a, b) => b.beta_std - a.beta_std).map(r => ({
-        label: SHORT[r.industry] || r.industry, v: r.beta_std,
-        lo: r.ci_lo, hi: r.ci_hi, color: IND_COLOR[r.industry],
-        bold: r.industry === 'Construction',
-        tip: `${r.beta_std.toFixed(2)} SD [${r.ci_lo.toFixed(2)}, ${r.ci_hi.toFixed(2)}] · ${r.n_firms} firms`,
-      })),
-    });
-
-    const taus = [-2, -1, 0, 1, 2];
-    const evSeries = (variable) => ['matched control', 'adopter'].map(role => ({
-      name: role, color: role === 'adopter' ? '--accent' : '--neutral',
-      width: role === 'adopter' ? 2.6 : 1.8,
-      values: taus.map(t => {
-        const r = D.firmstats.event_study.find(e =>
-          e.variable === variable && e.role === role && e.tau === t);
-        return r ? r.mean * 100 : null;
-      }),
-    }));
-    Charts.lineChart($('#st-ev-rev'), {
-      years: taus, height: 240, everyX: 1, series: evSeries('g_rev_fwd'),
-      yFmt: v => v + '%', yLabel: 'Revenue growth into the next year (%)',
-      tipFmt: (v, t) => `event year ${t}: ${v.toFixed(0)}%`,
-    });
-    const roaVals = evSeries('roa').flatMap(s => s.values).filter(v => v !== null);
-    Charts.lineChart($('#st-ev-roa'), {
-      years: taus, height: 240, everyX: 1, series: evSeries('roa'),
-      ymin: Math.floor(Math.min(...roaVals) - 4),
-      ymax: Math.ceil(Math.max(...roaVals) + 4),
-      yFmt: v => v + '%', yLabel: 'Return on assets (%)',
-      tipFmt: (v, t) => `event year ${t}: ${v.toFixed(0)}%`,
-    });
-    if (D.night) renderNight(host);
-  }
-
-  /* The night-batch panels (analyses 12-15): the rhetorical move mix, the
-     chain letters, the explorer conversion curves, and the holdouts. */
-  const MOVES = [
-    ['showcase', 'Capability showcase', '--c1'],
-    ['safe_harbor', 'Generic disclaimer', '--risk'],
-    ['threat_narrative', 'Threat narrative', '--thr'],
-    ['housekeeping', 'Housekeeping', '--neutral'],
-    ['hedged_plan', 'Hedged plan', '--c3'],
-    ['bandwagon', 'Industry bandwagon', '--c4'],
-    ['compliance_signal', 'Governance signal', '--c2'],
+  // The six specificity points as rough pattern rules. The real coding is three
+  // LLMs reading with a codebook; this is a sketch so a visitor can feel the rubric.
+  const CHECKS = [
+    ['action', 'an action, not an intention', /\b(deploy(?:ed|s|ing)?|launch(?:ed|es|ing)?|us(?:es|ed|ing)|operat\w+|power(?:s|ed|ing)?|embed(?:ded|s)?|integrat\w+|runs?|running|serv(?:es|ing)|deliver\w+|process(?:es|ing)?|automat\w+|answers?|handles?|detects?|predicts?|leverag\w+|provid(?:es|ing)|offers?|puts?|gives?|generat\w+|analyz\w+|optimiz\w+|enables?)\b/i],
+    ['use case', 'what it is used for', /\b(customers?|patients?|drivers?|users?|clients?|claims?|fraud|diagnos\w+|recommend\w+|search|support|underwrit\w+|inventory|logistics|scheduling|pricing|maintenance|manufactur\w+|questions?|orders?|routes?|safety|employees?|workforce|talent|hiring|sentiment|engagement|dashboards?|billing|payments?|security|marketing|sales|supply chain|forecast\w+|translat\w+)\b/i],
+    ['named product', 'a product or system with a name', /™|®|\([A-Z]{2,6}\)|"[^"]{2,40}"|\b[A-Za-z]*[a-z][A-Z]\w+\b|(?:[a-z,;:]\s+)(?:[A-Z][\w-]+\s+){1,3}[A-Z][\w-]+/],
+    ['number', 'a quantity', /\d\s*%|\$\s?\d|\b\d+(?:,\d{3})*(?:\.\d+)?\s*(?:thousand|million|billion)\b|\b(?:over|more than|nearly|about|up to)\s+\S*\d/i],
+    ['date or stage', 'when, or how far along', /\b(?:19|20)\d{2}\b|\b(?:now|currently|recently|pilot|beta|generally available|year-over-year|this year|patent[- ]pending|in production|rolled out|commercially)\b/i],
+    ['verifiable detail', 'something an outsider could check', null],
   ];
-  function renderNight(host) {
-    const N = D.night;
-    host.insertAdjacentHTML('beforeend',
-      `${N.moves ? `<div class="card"><h2>The moves of AI disclosure, industry by industry</h2>
-        <p class="sub">Three open-weight models coded what each sampled sentence is
-        DOING: showing off, hedging, disclaiming, narrating a threat. Across all
-        nine industries the showcase leads; in the companion construction study's construction-only view the
-        threat narrative led. Sentences without a two-model majority are not shown.</p>
-        <div id="nt-moves" class="chart"></div></div>` : ''}
-      ${N.chains ? `<div class="grid2">
-        <div class="card"><h2>Chain letters: boilerplate with a genealogy</h2>
-          <p class="sub">Near-identical sentences across firms, joined into families
-          (embedding cosine ≥ .93). By FY2025 a third of ALL AI sentences ride in a
-          chain letter, and every great chain letter is a warning.</p>
-          <div id="nt-chain" class="chart"></div></div>
-        <div class="card"><h2>The six great chain letters</h2>
-          <p class="sub">Carrier counts; families first seen in FY2014 were already
-          circulating when the panel starts.</p>
-          <div id="nt-chainlist"></div></div>
-      </div>` : ''}
-      ${N.explorers ? `<div class="grid2">
-        <div class="card"><h2>Exploration converts, eventually</h2>
-          <p class="sub">Of firms whose 10-K first said "we are exploring AI", the
-          share that has carried deployment language k years on. 82% of pre-ChatGPT
-          explorers got there within eight years; post-ChatGPT cohorts are converting
-          faster.</p>
-          <div id="nt-conv" class="chart"></div></div>
-        <div class="card"><h2>The holdouts: who still says nothing</h2>
-          <p class="sub">${(N.holdouts.summary.silent_share_2025 * 100).toFixed(0)}% of
-          FY2025 operating filers carry NO AI language. The biggest silents, by
-          assets:</p>
-          <div id="nt-hold"></div></div>
-      </div>` : ''}`);
-
-    if (N.moves) {
-      const TINY = { 'Construction': 'Constr.', 'Construction machinery': 'Mach.',
-                     'Auto manufacturing': 'Auto', 'Software & IT services': 'Software',
-                     'Computers & chips': 'Chips', 'Pharma & biotech': 'Pharma',
-                     'Utilities': 'Util.', 'Retail': 'Retail',
-                     'Aerospace & defense': 'Aero' };
-      const rows = N.moves.by_industry;
-      const inds = INDUSTRIES.filter(i => rows.some(r => r.industry === i));
-      Charts.stackedBar($('#nt-moves'), {
-        categories: inds, labels: inds.map(i => TINY[i]), height: 300,
-        counts: inds.map(i => rows.find(r => r.industry === i).n_passages),
-        yLabel: 'share of coded AI sentences',
-        series: MOVES.map(([key, name, color]) => ({
-          name, color,
-          values: inds.map(i => rows.find(r => r.industry === i)[`pct_${key}`] || 0),
-        })),
-      });
-    }
-    if (N.chains) {
-      const ys = N.chains.share.map(r => r.fy);
-      Charts.lineChart($('#nt-chain'), {
-        years: ys, height: 240,
-        series: [{ name: 'in a chain letter', color: '--risk', width: 2.4,
-                   values: N.chains.share.map(r => r.share_chain * 100) }],
-        ymax: 40, yFmt: v => v + '%', yLabel: 'AI sentences in a chain letter (%)',
-        tipFmt: (v, y) => `FY${y}: ${v.toFixed(0)}% of AI sentences`,
-      });
-      $('#nt-chainlist').innerHTML = N.chains.top.map(t =>
-        `<div class="m-sent"><div class="m-txt" style="font-style:italic">
-          “${t.exemplar.replace(/</g, '&lt;')}…”</div>
-         <div class="m-foot"><span><b>${t.n_firms} firms</b> ·
-          ${t.n_industries} industries · since ${t.first_fy <= 2014 ? '≤ FY2014' : 'FY' + t.first_fy}</span>
-         </div></div>`).join('');
-    }
-    if (N.explorers) {
-      const ks = [0, 1, 2, 3, 4, 5, 6, 7, 8];
-      const curve = (era) => ks.map(k => {
-        const r = N.explorers.conversion.find(c => c.era === era && c.k === k);
-        return r ? r.converted * 100 : null;
-      });
-      Charts.lineChart($('#nt-conv'), {
-        years: ks, height: 240, everyX: 1,
-        series: [
-          { name: 'pre-ChatGPT explorer cohorts', color: '--ink', width: 2.4,
-            values: curve('pre_chatgpt') },
-          { name: 'post-ChatGPT cohorts', color: '--c3', width: 2.4,
-            values: curve('post_chatgpt') }],
-        ymax: 100, yFmt: v => v + '%',
-        yLabel: 'has carried deployment talk (%)',
-        tipFmt: (v, k) => `${k} yr after first exploring: ${v.toFixed(0)}%`,
-      });
-    }
-    if (N.holdouts) {
-      $('#nt-hold').innerHTML = N.holdouts.roster.map(r =>
-        `<div class="m-sent"><div class="m-foot">
-          <span><b>${r.name}</b> · <span class="seg-dot"
-            style="background:${Charts.css(IND_COLOR[r.industry])}"></span>${SHORT[r.industry] || r.industry}</span>
-          <span>$${(r.assets / 1e9).toFixed(1)} bn assets</span>
-         </div></div>`).join('');
-    }
+  function scorer() {
+    let exText = null, exPts = null;
+    const run = () => {
+      const s = $('#sc-in').value.trim();
+      if (!s) { $('#sc-out').innerHTML = ''; $('#sc-sum').textContent = ''; return; }
+      const hits = CHECKS.map(([k, d, rx]) => rx ? rx.test(s) : false);
+      hits[5] = hits[2] || hits[3] || hits[4];
+      const n = hits.filter(Boolean).length;
+      $('#sc-out').innerHTML = CHECKS.map(([k, d], i) =>
+        '<div class="sc-pt' + (hits[i] ? ' on' : '') + '"><b>' + k + '</b><small>' + d + '</small></div>').join('');
+      const coders = (s === exText && exPts !== null)
+        ? ' · the paper’s three coders, reading the sentence in its filing context, gave it <b>' + exPts + ' of 6</b>' : '';
+      $('#sc-sum').innerHTML = '<b>' + n + ' of 6 points</b> · ' +
+        (n >= 3 ? 'would count as a specific capability claim' : 'below the 3-point bar: not specific') +
+        ' <small>(by these rough rules, not the paper’s coders' + coders + ')</small>';
+    };
+    $('#sc-go').addEventListener('click', run);
+    $('#sc-in').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); run(); } });
+    $('#sc-ex').addEventListener('click', async () => {
+      const s = await sentFor('software_it_services');
+      const all = Object.values(s);
+      const best = all.filter((x) => x.c && x.pts >= 5 && x.s.length < 340);
+      const pick = best[Math.floor(Math.random() * best.length)] || all[0];
+      exText = pick.s; exPts = pick.pts;
+      $('#sc-in').value = pick.s; run();
+    });
   }
 
-  // ---------------------------------------------------------------- firms
-  const F = { q: '', ind: '', ai: false, shown: 60 };
-  function renderFirms() {
-    const sel = $('#f-ind');
-    if (!sel.options.length) {
-      sel.innerHTML = '<option value="">All industries</option>' +
-        INDUSTRIES.map(i => `<option>${i}</option>`).join('');
-      sel.addEventListener('change', () => { F.ind = sel.value; F.shown = 60; renderFirms(); });
-      $('#f-search').addEventListener('input', (e) => {
-        F.q = e.target.value.toLowerCase(); F.shown = 60; renderFirms();
-      });
-      $('#f-ai').addEventListener('change', (e) => { F.ai = e.target.checked; F.shown = 60; renderFirms(); });
-      $('#f-more').addEventListener('click', () => { F.shown += 120; renderFirms(); });
-    }
-    let rows = D.firms;
-    if (F.ind) rows = rows.filter(f => f.industry === F.ind);
-    if (F.ai) rows = rows.filter(f => f.first_ai);
-    if (F.q) rows = rows.filter(f => f.name.toLowerCase().includes(F.q) ||
-                                     String(f.state || '').toLowerCase() === F.q);
-    rows = rows.slice().sort((a, b) => (a.first_ai || 9e9) - (b.first_ai || 9e9) ||
-                                       b.int_last - a.int_last);
-    $('#f-count').textContent = rows.length.toLocaleString('en-US') + ' firms';
-    $('#f-more').hidden = rows.length <= F.shown;
-
-    $('#tbl-firms').innerHTML =
-      '<thead><tr><th>Company</th><th>Industry</th><th class="num">Years</th>' +
-      '<th class="num">First AI year</th><th>AI intensity over time</th></tr></thead><tbody>' +
-      rows.slice(0, F.shown).map(f =>
-        `<tr><td><a href="${secCompany(f.cik)}" target="_blank" rel="noopener">${f.name}</a></td>` +
-        `<td><span class="seg-dot" style="background:${Charts.css(IND_COLOR[f.industry])}"></span>${SHORT[f.industry]}</td>` +
-        `<td class="num">${f.years[0]}–${String(f.years[f.years.length - 1]).slice(2)}</td>` +
-        `<td class="num">${f.first_ai || '·'}</td>` +
-        `<td>${Charts.spark(f.spark, { color: IND_COLOR[f.industry], w: 150 })}</td></tr>`
-      ).join('') + '</tbody>';
-  }
-
-  // ---------------------------------------------------------------- boot
-  /* Two phases, so the landing view paints as soon as ITS data is here rather
-     than after every byte of the site's data:
-       1. inventory.json alone (the filings grid, the landing view) -- the
-          selected view shows immediately, with a loading note until then;
-       2. the small per-view files in parallel, then the other views.
-     Anchors never block anything: they stream in per industry (loadAnchors)
-     and upgrade links in place. */
-  async function boot() {
-    D.anchors = {};
-    const start = location.hash.replace('#', '');
-    show(['overview', 'filings', 'industries', 'claims', 'stats', 'firms', 'method']
-         .includes(start) ? start : 'filings', false);
-    const smallP = Promise.all(
-      ['headline', 'series', 'crossings', 'tests', 'composition', 'firms', 'claims',
-       'firmstats']
-        .map(n => fetch('data/' + n + '.json').then(r => r.json())));
-    // the night-batch statistics view degrades gracefully when absent
-    const nightP = fetch('data/night.json')
-      .then(r => r.ok ? r.json() : null).catch(() => null);
-    try {
-      D.inventory = await fetch('data/inventory.json').then(r => r.json());
-    } catch (e) {
-      $('#main').insertAdjacentHTML('afterbegin',
-        '<div class="card callout"><b>Could not load data/.</b> This page uses ' +
-        '<code>fetch</code>, which browsers block on <code>file://</code>. Serve the ' +
-        'folder instead: <code>python -m http.server 8765</code> and open ' +
-        '<code>http://localhost:8765</code>.</div>');
-      throw e;
-    }
-    renderFilings();
-    // ?review=<cik>:<fy> deep-links straight into a filing's review panel
-    const rv = new URLSearchParams(location.search).get('review');
-    if (rv) {
-      const [cik, fy] = rv.split(':');
-      const cell = $(`a.inv-cell[data-cik="${cik}"][data-fy="${fy}"]`);
-      if (cell) openReview(cell);
-    }
-    const files = await smallP;
-    [D.headline, D.series, D.crossings, D.tests, D.composition, D.firms, D.claims,
-     D.firmstats] = files;
-    D.night = await nightP;
-    renderOverview();
-    renderIndustries();
-    renderClaims();
-    renderStats();
-    renderFirms();
-    // idle prefetch: the remaining industries' anchors, one at a time, so a
-    // later industry switch or review click finds them already cached
-    for (const ind of INDUSTRIES) await loadAnchors(ind);
-  }
-  boot();
+  const INIT = { overview: initOverview, findings: initFindings, sectors: initSectors,
+                 filings: initFilings, method: initMethod };
+  loaded.overview = true; initOverview();
 })();

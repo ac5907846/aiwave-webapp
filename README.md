@@ -1,8 +1,11 @@
-# Web app: AI Across Industries (paper 2)
+# Web app: Backed Claims (Paper A companion)
 
-Static sub-site of the disclosure-series domain, modeled on paper 1's app:
-plain HTML/CSS/JS, no build step, hand-rolled SVG charts reading the validated
-palette from CSS custom properties, data baked from `02_analysis/*/outputs/`.
+Static companion site of the Paper A manuscript (SMJ submission): AI resources
+and AI talk in the 10-Ks of nine US sectors, FY2014 to 2025. Plain HTML/CSS/JS,
+no build step, hand-rolled SVG charts reading the palette from CSS custom
+properties, data baked from the analysis outputs. Rebuilt 2026-09-30 for the
+Paper A framing (H1 alignment, H2 congruence, H3a/H3b litigation); the earlier
+construction-benchmark site's data files are parked in `_archive_data_2026-09-30/`.
 
 ## Running locally
 
@@ -15,25 +18,24 @@ python -m http.server 8765     # fetch is blocked on file:// URLs
 ## Rebuilding the data
 
 ```bash
-python build_data.py           # reads 02_analysis outputs, writes data/*.json
+python build_data.py           # reads the d19/d20 analysis outputs, writes data/*.json
 ```
 
-`build_data.py` **never recomputes a statistic** -- every value is copied from
-an analysis output, so the site and the manuscript cannot disagree.
-`data/claims.json` bakes to `null` until analysis 02's three-model coding has
-run; the Claims view says so instead of breaking.
+`build_data.py` **never recomputes a statistic**: every value is copied from an
+analysis output (d19_* results, the master dataset, passages_coded.csv), so the
+site and the manuscript cannot disagree. The only derivations are display
+transforms the paper itself uses (95% bands drawn as estimate plus or minus
+1.96 SE in the browser).
 
-## Views
+## Views (5 tabs)
 
 | View | What it does |
 |---|---|
-| **Overview** | the benchmark question: adoption/intensity/framing curves for all seven industries, threshold-crossing table, variance decomposition |
-| **Filings** | the landing grid from paper 1's site: one cell per firm-year, coloured by AI language, hover previews the filing's first AI sentence, click opens the 10-K on sec.gov (one industry at a time; search spans all seven). Links open the document top -- paper 1's verified scroll-to-text anchors are a later port (`build_anchors.py` needs its own EDGAR fetch + verification pass) |
-| **Industries** | one card per industry: sample size, crossings, post-ChatGPT intensity ratio, its own adoption curve |
-| **Claims** | the three-model claim coding: claim mix per industry before/after ChatGPT, deployment-to-exposure ratio |
-| **Statistics** | analysis 03 as live charts: the determinants forest (AMEs with CIs), the pre/post size gradient, the R&D-link forest per industry, and the first-disclosure event study with its honest nulls |
-| **Firms** | every operating firm, searchable/filterable, AI-intensity sparkline, each name linking to its filings on sec.gov |
-| **Method** | how it was measured and what the study is not |
+| **Overview** | the research question, headline counts, the four verdicts with their p-values, and the diffusion chart (share of 10-Ks with C/G/F/any AI per sector-year, outcome toggle) |
+| **Findings** | H1 as three mini-forests (C vs the G/F falsification rows, within and between firms), H2 interaction forests, H3 marginal-effect curves over litigation exposure with 95% bands (design toggle), and per-sector H1 slopes with the Wald test (resource and design toggles) |
+| **Sectors** | one card per sector from Table 1: counts, disclosure shares, resources, litigation exposure, build-vs-buy pill, and a C-diffusion sparkline |
+| **Filings** | one square per company-year coloured by coded AI language; hover previews the filing's best coded sentence (top-scoring specific claim where one exists), click opens the 10-K on sec.gov; search spans all sectors |
+| **Method** | pipeline prose (lexicon, three coders, 2-of-3 vote, six specificity points, two designs), the coder-agreement table, and "Score a claim yourself": a rough six-point rubric sketch that also reveals the coders' own score on real example claims |
 
-Deploy like paper 1's: push the folder to a Pages branch; the shared domain
-mounts each paper as a sub-site.
+Deploy as before: push the folder to a Pages branch; the shared domain mounts
+each paper as a sub-site (CNAME kept).

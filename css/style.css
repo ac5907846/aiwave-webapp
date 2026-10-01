@@ -355,3 +355,46 @@ mark{background:color-mix(in srgb,var(--c3) 40%,transparent);color:inherit;
   font-size:11.5px;color:var(--ink-3)}
 .m-sent .m-foot a{font-weight:650}
 .m-note{font-size:12.5px;color:var(--ink-3)}
+
+/* ============================================= Paper A additions (2026-09-30) */
+:root{
+  /* one line colour per sector, dark enough for 1.8 px lines on the light surface */
+  --i1:#2e5eaa; --i2:#c44f3c; --i3:#2f8f83; --i4:#3a8a3d; --i5:#a04f7c;
+  --i6:#7b5cc4; --i7:#5b8fb3; --i8:#b07c2a; --i9:#6b6f76;
+}
+.seg{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 14px}
+.seg button{font:inherit;font-size:12.5px;padding:6px 12px;border:1px solid var(--line-2);
+  border-radius:99px;background:var(--surface);color:var(--ink-2);cursor:pointer}
+.seg button:hover{border-color:var(--ink-3);color:var(--ink)}
+.seg button.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.verdicts{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.verdict{border:1px solid var(--line);border-radius:var(--r-s);padding:13px 15px;background:var(--surface-2)}
+.verdict .vtag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.02em;
+  padding:2px 8px;border-radius:99px;margin-bottom:8px}
+.verdict.ok .vtag{background:color-mix(in srgb,var(--c2) 18%,transparent);color:var(--c2)}
+.verdict.half .vtag{background:color-mix(in srgb,var(--c4) 20%,transparent);color:#8a6d1d}
+.verdict b{display:block;font-size:14px;margin-bottom:5px}
+.verdict small{display:block;font-size:12px;color:var(--ink-3);line-height:1.5;font-variant-numeric:tabular-nums}
+.mini-h{font-size:13.5px;font-weight:650;margin:4px 0 2px;color:var(--ink)}
+.zero-line{stroke:var(--ink-3);stroke-width:1;stroke-dasharray:3 3}
+.grid3 .legend,.grid2 .legend{grid-column:1/-1}
+.sec-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:16px}
+.sec-card{margin:0}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.sec-head h2{margin:0}
+.sec-spark{display:flex;align-items:center;gap:12px;margin-top:10px}
+.sec-spark span{font-size:11.5px;color:var(--ink-3)}
+.scorer textarea{width:100%;font:inherit;font-size:14px;padding:11px 13px;border:1px solid var(--line-2);
+  border-radius:var(--r-s);background:var(--surface);color:var(--ink);resize:vertical;box-sizing:border-box}
+.scorer textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+.scorer-row{display:flex;gap:10px;align-items:center;margin:10px 0 14px;flex-wrap:wrap}
+.btn{font:inherit;font-size:13px;font-weight:600;padding:8px 16px;border-radius:var(--r-s);cursor:pointer;
+  border:1px solid var(--accent);background:var(--accent);color:#fff}
+.btn:hover{filter:brightness(1.08)}
+.btn.ghost{background:var(--surface);color:var(--accent)}
+.sc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px}
+.sc-pt{border:1px dashed var(--line-2);border-radius:var(--r-s);padding:9px 11px;opacity:.55}
+.sc-pt.on{border:1px solid var(--c2);background:color-mix(in srgb,var(--c2) 10%,transparent);opacity:1}
+.sc-pt b{display:block;font-size:12.5px}
+.sc-pt small{font-size:11px;color:var(--ink-3)}
+.m-note{font-size:12.5px;color:var(--ink-3);padding:10px 2px}
