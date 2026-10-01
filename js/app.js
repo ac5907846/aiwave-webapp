@@ -8,7 +8,22 @@
   'use strict';
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
-  const J = (p) => fetch('data/' + p).then((r) => r.json());
+  const V = '?v=3';                                        // bump on each release: GitHub Pages caches hard
+  const J = (p) => fetch('data/' + p + V).then((r) => r.json());
+  const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function countTo(el, to, suffix) {                       // a stat tile counts up to its value once
+    if (REDUCED) { el.textContent = fmtInt(to) + (suffix || ''); return; }
+    let t0 = null, done = false;
+    const step = (ts) => {
+      if (done) return;
+      if (t0 === null) t0 = ts;
+      const t = Math.min(1, (ts - t0) / 1000), k = 1 - Math.pow(1 - t, 3);
+      el.textContent = fmtInt(to * k) + (suffix || '');
+      if (t < 1) requestAnimationFrame(step); else done = true;
+    };
+    requestAnimationFrame(step);
+    setTimeout(() => { if (!done) { done = true; el.textContent = fmtInt(to) + (suffix || ''); } }, 1300);
+  }
   const fmtInt = (n) => Number(n).toLocaleString('en-US');
   const pfmt = (p) => (p < 0.001 ? '<.001' : p.toFixed(3).replace(/^0/, ''));
   const pct = (v, d) => (v * 100).toFixed(d === undefined ? 0 : d) + '%';
@@ -47,18 +62,20 @@
   function show(v) {
     $$('#nav button').forEach((b) => b.classList.toggle('on', b.dataset.view === v));
     $$('.view').forEach((s) => (s.hidden = s.id !== 'view-' + v));
+    if (v !== 'overview' && window.Hero) Hero.pause();
     if (!loaded[v]) { loaded[v] = true; INIT[v](); }
     window.scrollTo({ top: 0 });
   }
 
   // ============================================================== OVERVIEW
   function initOverview() {
-    need(['headline', 'models', 'diffusion'], ({ headline: H, models: M, diffusion: D }) => {
-      $('#ov-n10k').textContent = fmtInt(H.n10k);
-      $('#ov-span').textContent = 'FY' + H.fy0 + '–' + H.fy1;
-      $('#ov-firms').textContent = fmtInt(H.firms);
-      $('#ov-nai').textContent = fmtInt(H.nai);
-      $('#ov-nc').textContent = fmtInt(H.nC);
+    need(['headline', 'models', 'diffusion', 'hero'], ({ headline: H, models: M, diffusion: D, hero: HR }) => {
+      if (window.Hero) Hero.init(HR);
+      countTo($('#ov-n10k'), H.n10k);
+      $('#ov-span').textContent = 'FY' + H.fy0 + '-' + H.fy1;
+      countTo($('#ov-firms'), H.firms);
+      countTo($('#ov-nai'), H.nai);
+      countTo($('#ov-nc'), H.nC);
       verdicts(M);
       const seg = $('#ov-seg');
       seg.addEventListener('click', (e) => {

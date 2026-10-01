@@ -144,6 +144,22 @@ def main():
     firms.sort(key=lambda f: f["name"])
     jput(firms, "firms")
 
+    # ------------------------------------------------------------- hero: one record per filing, packed small
+    # y: fiscal year - 2014; s: sector index into "sectors"; l: 0 outside the operating screen, 1 coded with no AI
+    # language, 2 AI language without a specific claim, 3 at least one specific claim
+    sec_order = list(SLUG)
+    hy, hs, hl = [], [], []
+    for r in M.itertuples():
+        hy.append(int(r.fy) - 2014); hs.append(sec_order.index(r.industry))
+        op = int(r.is_operating == 1 and r.coded == 1)
+        hl.append(0 if not op else 1 if r.n_ai == 0 else 2 if r.n_C == 0 else 3)
+    T1x = pd.read_csv(core.out("d19_T1_by_industry.csv")).set_index("industry")
+    jput(dict(sectors=sec_order, inhouse=[int(T1x.loc[s, "mode"] == "in-house") for s in sec_order],
+              fy0=2014, y=hy, s=hs, l=hl,
+              counts=dict(n10k=len(M), firms=int(M.cik.nunique()),
+                          nai=int((M.n_ai > 0)[(M.is_operating == 1) & (M.coded == 1)].sum()),
+                          nC10k=int((M.n_C > 0)[(M.is_operating == 1) & (M.coded == 1)].sum()))), "hero")
+
     # ------------------------------------------------------------- example sentences per sector
     # for each filing with coded AI sentences: the best sentence to preview
     # (the specific claim with the most points, else the first AI sentence)

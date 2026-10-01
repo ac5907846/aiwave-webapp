@@ -398,3 +398,19 @@ mark{background:color-mix(in srgb,var(--c3) 40%,transparent);color:inherit;
 .sc-pt b{display:block;font-size:12.5px}
 .sc-pt small{font-size:11px;color:var(--ink-3)}
 .m-note{font-size:12.5px;color:var(--ink-3);padding:10px 2px}
+
+/* ============================================= hero animation (2026-10-01) */
+.herocard{position:relative;padding-top:18px}
+.hero-wrap{display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:20px;align-items:center}
+#hero-cv{width:100%;display:block}
+.hero-read{display:flex;flex-direction:column;gap:6px;min-height:170px;justify-content:center}
+.hr-cap{font-size:13px;font-weight:650;color:var(--ink)}
+.hr-num{font-family:var(--serif);font-size:46px;font-weight:600;line-height:1.05;color:var(--accent);font-variant-numeric:tabular-nums}
+.hr-sub{font-size:12.5px;color:var(--ink-3);line-height:1.5}
+.tour{position:absolute;top:12px;right:14px;z-index:5}
+.tour-btn{font:inherit;font-size:12px;font-weight:600;padding:5px 14px 7px;border:1px solid var(--line-2);
+  border-radius:99px;background:var(--surface);color:var(--ink-2);cursor:pointer;position:relative;overflow:hidden}
+.tour.on .tour-btn{border-color:var(--accent);color:var(--accent)}
+.tour-bar{position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--accent);
+  transform:scaleX(0);transform-origin:0 50%;display:block}
+@media(max-width:760px){.hero-wrap{grid-template-columns:1fr}.hero-read{min-height:0;flex-direction:row;align-items:baseline;flex-wrap:wrap;gap:10px}}
