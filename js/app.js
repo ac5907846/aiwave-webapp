@@ -8,7 +8,7 @@
   'use strict';
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
-  const V = '?v=4';                                        // bump on each release: GitHub Pages caches hard
+  const V = '?v=5';                                        // bump on each release: GitHub Pages caches hard
   const J = (p) => fetch('data/' + p + V).then((r) => r.json());
   const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function countTo(el, to, suffix) {                       // a stat tile counts up to its value once
@@ -100,15 +100,16 @@
     const h3r = est(M, 'H3 L1_RD_SALES0 baseline', 'RxL', 'WITHIN'), h3rB = est(M, 'H3 L1_RD_SALES0 baseline', 'RxL', 'BETWEEN');
     const h3p = est(M, 'H3 L1_LOG_AI_PAT_STOCK baseline', 'RxL', 'WITHIN'), h3pB = est(M, 'H3 L1_LOG_AI_PAT_STOCK baseline', 'RxL', 'BETWEEN');
     const rows = [
-      ['ok', 'H1 alignment', 'Resources predict specific claims',
-       'R&D ' + pp(est(M, rd[0], rd[1], 'WITHIN')) + ' | ' + pp(est(M, rd[0], rd[1], 'BETWEEN')) +
-       ' · AI patents ' + pp(est(M, ap[0], ap[1], 'WITHIN')) + ' | ' + pp(est(M, ap[0], ap[1], 'BETWEEN')) + ', within | between firms'],
-      ['ok', 'H2 congruence', 'Only where the sector fits the resource',
-       'AI patents × builds in-house ' + pp(h2b) + ' | ' + pp(h2bB) + ' · R&D × high AI exposure ' + pp(h2a) + ' | ' + pp(h2aB)],
-      ['ok', 'H3b chilling', 'Litigation mutes the AI patent path',
-       'AI patents × litigation exposure ' + pp(h3p) + ' | ' + pp(h3pB)],
-      ['half', 'H3a screening', 'Thin: shows for R&D within firm only',
-       'R&D × litigation exposure ' + pp(h3r) + ' within firm, but ' + pp(h3rB) + ' between firms and in no single sector'],
+      ['ok', 'H1 alignment', 'Technological resources predict specific capability claims',
+       'R&D intensity ' + pp(est(M, rd[0], rd[1], 'WITHIN')) + ' | ' + pp(est(M, rd[0], rd[1], 'BETWEEN')) +
+       ' · AI patent portfolio ' + pp(est(M, ap[0], ap[1], 'WITHIN')) + ' | ' + pp(est(M, ap[0], ap[1], 'BETWEEN')) + ', within | between firms'],
+      ['ok', 'H2 congruence', 'Stronger where the resource is relevant to the industry',
+       'AI patent portfolio × internal AI development ' + pp(h2b) + ' | ' + pp(h2bB) +
+       ' · R&D intensity × high industry AI exposure ' + pp(h2a) + ' | ' + pp(h2aB)],
+      ['ok', 'H3b chilling', 'Litigation exposure weakens the patent association',
+       'AI patent portfolio × litigation exposure ' + pp(h3p) + ' | ' + pp(h3pB)],
+      ['half', 'H3a screening', 'Limited evidence: R&D intensity, within firm only',
+       'R&D intensity × litigation exposure ' + pp(h3r) + ' within firm, but ' + pp(h3rB) + ' between firms and in no single sector'],
     ];
     $('#ov-verdicts').innerHTML = rows.map(([cls, tag, title, sub]) =>
       '<div class="verdict ' + cls + '" role="button" tabindex="0" title="Open the Findings view">' +
@@ -235,12 +236,12 @@
                                   s.kind === 'slope' && s.firms >= 20 && s.industry !== 'All sectors')
       .sort((a, b) => b.coef - a.coef)
       .map((s) => ({ label: s.industry, points: [{
-        est: s.coef, se: s.se, name: s.mode === 'in-house' ? 'builds AI in-house' : 'buys AI',
+        est: s.coef, se: s.se, name: s.mode === 'in-house' ? 'develops AI internally' : 'obtains AI externally',
         color: s.mode === 'in-house' ? '--c2' : '--c3',
         tip: 'slope ' + s.coef.toFixed(3).replace(/^(-?)0\./, '$1.') + ', p ' + pfmt(s.p) +
              '<br>' + fmtInt(s.firms) + ' firms hold the resource' }] }));
     C.forest($('#ch-slopes'), { rows, w: 760, labelW: 170, rowH: 30, xFmt: (t) => String(t).replace(/^(-?)0\./, '$1.') });
-    C.legend($('#ch-slopes'), [{ name: 'sector builds AI in-house', color: '--c2' }, { name: 'sector buys AI', color: '--c3' }]);
+    C.legend($('#ch-slopes'), [{ name: 'develops AI internally', color: '--c2' }, { name: 'obtains AI externally', color: '--c3' }]);
     need(['models'], ({ models: MM }) => {
       const wd = MM.wald.filter((w) => w.resource === res && w.spec === 'H1 slopes' && w.kind === 'slope');
       const one = wd.find((w) => w.fe === fe);
@@ -259,7 +260,7 @@
         const d = D.series.find((x) => x.name === s.name);
         return '<div class="card sec-card"><div class="sec-head"><h2>' + esc(s.name) + '</h2>' +
           '<span class="pill ' + (s.mode === 'in-house' ? 'yes' : '') + '">' +
-          (s.mode === 'in-house' ? 'builds AI in-house' : 'buys AI') + '</span></div>' +
+          (s.mode === 'in-house' ? 'develops AI internally' : 'obtains AI externally') + '</span></div>' +
           '<div class="kv">' +
           '<div><div class="k">firms / firm-years</div><div class="v">' + fmtInt(s.firms) + ' / ' + fmtInt(s.fy) + '</div></div>' +
           '<div><div class="k">10-Ks with a specific claim</div><div class="v">' + pct(s.anyC, 1) + '</div></div>' +

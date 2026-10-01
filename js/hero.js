@@ -113,8 +113,8 @@
     }
     if (stage === 3 && mix > 0.5) {
       var Ls = layouts.sector, half = Ls.x0[Ls.nInh - 1] + Ls.colW;
-      ctx.fillText('build AI in-house', (Ls.x0[0] + half) / 2, H - 6);
-      ctx.fillText('buy AI', (Ls.x0[Ls.nInh] + Ls.x0[8] + Ls.colW) / 2, H - 6);
+      ctx.fillText('develop AI internally', (Ls.x0[0] + half) / 2, H - 6);
+      ctx.fillText('obtain AI externally', (Ls.x0[Ls.nInh] + Ls.x0[8] + Ls.colW) / 2, H - 6);
     }
   }
 
@@ -174,7 +174,7 @@
     return [
       { ms: 2600, run: function (sl) {
           setStage(0);
-          readout('Every annual report, one dot', C.n10k, fmtInt, '10-K filings from ' + fmtInt(C.firms) + ' firms, nine sectors, FY2014 to FY2025');
+          readout('One dot per 10-K filing', C.n10k, fmtInt, 'Form 10-K filings from ' + fmtInt(C.firms) + ' firms in nine sectors, fiscal years 2014 to 2025');
           return sl(2600);
         } },
       { ms: 12 * 420 + 900, run: function (sl) {
@@ -182,7 +182,7 @@
           for (var y = 0; y <= 11; y++) (function (y2) {
             chain = chain.then(function () {
               cur.sweep = y2; setStage(1, y2); draw(1, y2, 1);
-              readout('AI language spreads', opShare(2014 + y2), fmtPct, 'of operating firms mention AI in FY' + (2014 + y2));
+              readout('AI language spreads', opShare(2014 + y2), fmtPct, 'of operating firms mention AI in fiscal year ' + (2014 + y2));
               return sl(y2 >= 8 ? 560 : 420);
             });
           })(y);
@@ -190,12 +190,12 @@
         } },
       { ms: 3200, run: function (sl) {
           setStage(2);
-          readout('Specific capability claims stay rare', C.nC10k, fmtInt, '10-Ks carry a claim that names what the firm does with AI');
+          readout('Specific capability claims are rare', C.nC10k, fmtInt, '10-K filings contain at least one specific capability claim');
           return sl(3200);
         } },
       { ms: 4200, run: function (sl) {
           setStage(3);
-          readout('Claims live where sectors build AI', 23, fmtPct, 'of software 10-Ks carry a specific claim, against 2% in retail');
+          readout('Claims concentrate where AI is developed internally', 23, fmtPct, 'of software 10-Ks contain a specific claim, against 2% in retail');
           return sl(4200);
         } }
     ];
@@ -262,7 +262,7 @@
     global.addEventListener('resize', function () { build(); draw(Math.max(0, cur.stage), cur.sweep, 1); });
     if (reduced) {
       setStage(3);
-      readout('Claims live where sectors build AI', 23, fmtPct, 'of software 10-Ks carry a specific claim, against 2% in retail');
+      readout('Claims concentrate where AI is developed internally', 23, fmtPct, 'of software 10-Ks contain a specific claim, against 2% in retail');
     } else {
       setStage(0);
       play();

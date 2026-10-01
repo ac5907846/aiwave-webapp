@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Backed Claims: AI resources and AI talk in US 10-Ks</title>
-<meta name="description" content="Do firms that hold AI resources make the specific AI claims? R&D, AI patents and AI workers against the AI language of 22,780 10-K filings across nine US sectors, FY2014-2025. Every number traces to a public SEC filing.">
+<title>Backed Claims: Technological resources and corporate AI disclosure</title>
+<meta name="description" content="Technological resources and litigation exposure in corporate AI disclosure: specific AI capability claims against R&D intensity, AI patent portfolios and the AI workforce share in 22,780 10-K filings across nine US sectors, fiscal years 2014 to 2025. Every number traces to a public SEC filing.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=4">
-<link rel="preload" href="data/headline.json?v=4" as="fetch" crossorigin>
-<link rel="preload" href="data/hero.json?v=4" as="fetch" crossorigin>
+<link rel="stylesheet" href="css/style.css?v=5">
+<link rel="preload" href="data/headline.json?v=5" as="fetch" crossorigin>
+<link rel="preload" href="data/hero.json?v=5" as="fetch" crossorigin>
 </head>
 <body>
 
@@ -21,7 +21,7 @@
     <div class="brand">
       <div>
         <div class="brand-t">Backed Claims</div>
-        <div class="brand-s">AI resources and AI talk in the 10-Ks of nine US sectors</div>
+        <div class="brand-s">Technological resources and litigation exposure in corporate AI disclosure</div>
       </div>
     </div>
     <nav id="nav" aria-label="Sections">
@@ -39,14 +39,15 @@
   <!-- ============================================ OVERVIEW -->
   <section id="view-overview" class="view">
     <div class="hero">
-      <h1>When a firm says it can do AI, <em>does it hold anything behind the words?</em></h1>
+      <h1>When does corporate AI disclosure convey information <em>about technological resources?</em></h1>
       <p class="lede">
-        Most AI language in annual reports is generic. This study separates the rare
-        <b>specific capability claims</b>, sentences that name a product, a use and a result,
-        from generic AI talk and AI risk language, and asks whether the specific claims
-        track what the firm actually holds: R&amp;D spending, AI patents, AI workers.
-        They do, where the resource fits the sector, and less where securities
-        litigation is common.
+        Corporate disclosure about artificial intelligence has expanded rapidly, yet most of it is
+        generic. This study distinguishes <b>specific capability claims</b>, sentences that describe
+        the firm&rsquo;s own AI capability and satisfy at least three of six specificity criteria, from
+        generic and firm-specific AI risk language, and examines whether these claims are associated
+        with technological resources: R&amp;D intensity, AI patent portfolios, and the AI workforce
+        share. The associations are stronger where a resource is relevant to how the industry obtains
+        AI, and weaker where securities litigation exposure is greater.
       </p>
     </div>
 
@@ -64,24 +65,24 @@
 
     <div class="stats">
       <div class="stat"><div class="v" id="ov-n10k">&hellip;</div>
-        <div class="k">10-K filings read, <span id="ov-span"></span></div></div>
+        <div class="k">Form 10-K filings, <span id="ov-span"></span></div></div>
       <div class="stat"><div class="v" id="ov-firms">&hellip;</div>
         <div class="k">firms in nine sectors</div></div>
       <div class="stat"><div class="v" id="ov-nai">&hellip;</div>
-        <div class="k">AI sentences coded by three local language models</div></div>
+        <div class="k">sentences about AI, classified by three language models</div></div>
       <div class="stat accent"><div class="v" id="ov-nc">&hellip;</div>
-        <div class="k">are specific capability claims (3 or more of 6 specificity points)</div></div>
+        <div class="k">specific capability claims (at least three of six specificity criteria)</div></div>
     </div>
 
     <div class="card">
-      <h2>The four results</h2>
+      <h2>The main results</h2>
       <div class="verdicts" id="ov-verdicts"></div>
     </div>
 
     <div class="card">
-      <h2>Who says what, over time</h2>
-      <p class="sub">Share of each sector's 10-Ks carrying the selected kind of AI language.
-        Pick the outcome; hover a point for the exact share and sample.</p>
+      <h2>AI disclosure by sector and fiscal year</h2>
+      <p class="sub">Share of each sector's 10-Ks containing the selected form of AI disclosure.
+        Hover a point for the exact share and sample size.</p>
       <div class="seg" id="ov-seg" role="group" aria-label="Outcome">
         <button data-k="C" class="on">specific capability claims (C)</button>
         <button data-k="G">generic AI risk (G)</button>
@@ -95,41 +96,40 @@
   <!-- ============================================ FINDINGS -->
   <section id="view-findings" class="view" hidden>
     <div class="hero">
-      <h1>Three hypotheses, <em>every estimate interactive</em></h1>
+      <h1>Hypotheses <em>and estimates</em></h1>
       <p class="lede">
-        Each estimate below comes from the paper's result files, with the same two
-        designs throughout: <b>within firm</b> (firm and year fixed effects: does the firm say
-        more when it holds more?) and <b>between firms</b> (sector &times; year fixed effects: do
-        holders say more than non-holders in the same sector and year?). Bands and whiskers
-        are 95% intervals (estimate &plusmn; 1.96 standard errors, clustered by firm).
-        Every estimate is an association; disclosure is chosen, never assigned.
+        Each estimate comes from the study's result files, in the same two designs throughout:
+        <b>within firm</b> (firm and fiscal-year fixed effects, comparing a firm with itself as its
+        resources change) and <b>between firms</b> (sector &times; fiscal-year fixed effects,
+        comparing firms within the same sector and year). Bands and whiskers are 95% intervals
+        (estimate &plusmn; 1.96 standard errors, clustered by firm). All estimates are conditional
+        associations; disclosure is chosen, not assigned.
       </p>
     </div>
 
     <div class="card">
-      <h2>H1 alignment: resources predict specific claims, and claims more than risk talk</h2>
-      <p class="sub">The effect of each resource at t&minus;1 on AI language at t. Filled dot:
-        within firm; hollow dot: between firms. Rows G and F are the falsification check:
-        the same models with risk language as the outcome, where resource theory predicts
-        nothing. R&amp;D's link runs to claims, not to risk language; AI patents raise every
-        register of AI talk.</p>
+      <h2>H1: technological resources and specific capability claims</h2>
+      <p class="sub">The association of each resource at t-1 with AI disclosure at t. Filled dot:
+        within firm; hollow dot: between firms. The generic (G) and firm-specific (F) AI risk rows
+        are comparison outcomes: the same models with risk language as the outcome, for which
+        resource theory makes no prediction. R&amp;D intensity is associated with claims rather than
+        risk language; AI patent portfolios are associated with every form of AI disclosure.</p>
       <div class="grid3" id="h1-forests"></div>
     </div>
 
     <div class="card">
-      <h2>H2 congruence: the resource counts where the sector fits it</h2>
-      <p class="sub">Interaction terms: AI patents &times; the sector builds AI in-house
-        (S&#8322;), and R&amp;D &times; high industry AI exposure (S&#8321;).</p>
+      <h2>H2: industry context and the resource associations</h2>
+      <p class="sub">Interaction terms: AI patent portfolio &times; internal AI development
+        (S&#8322;), and R&amp;D intensity &times; high industry AI exposure (S&#8321;).</p>
       <div class="grid2" id="h2-forests"></div>
     </div>
 
     <div class="card">
-      <h2>H3 litigation: screening or chilling?</h2>
-      <p class="sub">The marginal effect of each resource on specific claims as sector
-        litigation exposure rises (the share of the sector's firms sued in the calendar
-        year before the filing). Screening (H3a) predicts a rising line, chilling (H3b) a
-        falling one. The AI patent slope falls in both designs; the R&amp;D slope rises
-        only within firm.</p>
+      <h2>H3: litigation exposure, screening and chilling</h2>
+      <p class="sub">The resource slope on specific capability claims as litigation exposure rises
+        (the share of the sector's firms named in securities class actions in the calendar year
+        before the filing). Screening (H3a) predicts a rising slope, chilling (H3b) a falling one.
+        The AI patent slope falls in both designs; the R&amp;D slope rises within firm only.</p>
       <div class="seg" id="h3-seg" role="group" aria-label="Design">
         <button data-fe="WITHIN" class="on">within firm</button>
         <button data-fe="BETWEEN">between firms</button>
@@ -138,11 +138,11 @@
     </div>
 
     <div class="card">
-      <h2>Sector by sector: the resource slope in each industry</h2>
-      <p class="sub">The H1 slope estimated separately per sector, drawn where at least 20
-        firms hold the resource. Green: the sector builds AI in-house; amber: it buys AI.
-        Hover for the estimate, p-value and firm count; the Wald test asks whether the
-        drawn slopes are equal.</p>
+      <h2>Resource and litigation associations by sector</h2>
+      <p class="sub">The resource slope estimated separately for each sector, drawn where at least
+        20 firms hold the resource. Green: sectors classified as developing AI internally; amber:
+        sectors that obtain AI externally. Hover for the estimate, p-value and firm count; the Wald
+        test assesses whether the drawn slopes are equal.</p>
       <div class="seg" id="sl-seg" role="group" aria-label="Resource and design">
         <button data-res="log AI patent stock" data-fe="WITHIN" class="on">AI patents &middot; within</button>
         <button data-res="log AI patent stock" data-fe="BETWEEN">AI patents &middot; between</button>
@@ -157,12 +157,13 @@
   <!-- ============================================ SECTORS -->
   <section id="view-sectors" class="view" hidden>
     <div class="hero">
-      <h1>Nine sectors, <em>two ways of getting AI</em></h1>
-      <p class="lede">Five sectors build AI into their own products or processes (software,
-        computers and chips, aerospace and defense, auto manufacturing, pharma and
-        biotech); four buy it (retail, utilities, construction, construction machinery).
-        The split is the congruence moderator S&#8322;: an AI patent signals capability
-        where firms are expected to build.</p>
+      <h1>Nine sectors, <em>two ways of obtaining AI</em></h1>
+      <p class="lede">Five sectors are classified as primarily developing AI internally (software
+        and IT services, computers and chips, aerospace and defense, auto manufacturing, and
+        pharma and biotech); four as primarily obtaining it from external providers (retail,
+        utilities, construction, and construction machinery). This classification is the
+        congruence moderator S&#8322;: an AI patent portfolio is expected to be more closely
+        associated with claims where AI is developed internally.</p>
     </div>
     <div id="sec-cards"></div>
   </section>
@@ -170,11 +171,11 @@
   <!-- ============================================ FILINGS -->
   <section id="view-filings" class="view" hidden>
     <div class="hero">
-      <h1>Every filing we read, <em>one click from the original</em></h1>
+      <h1>The filings <em>behind the measures</em></h1>
       <p class="lede">
-        One square per company-year, coloured by its coded AI language. Hover a square to
-        read the filing's best coded sentence, the top-scoring specific claim where one
-        exists; click to open that 10-K on sec.gov. Search spans all nine sectors.
+        One square per firm-year, coloured by its coded AI disclosure. Hovering a square shows the
+        filing's highest-scoring coded sentence, the top specific capability claim where one
+        exists; clicking opens that 10-K on sec.gov. Search covers all nine sectors.
       </p>
     </div>
     <div class="card">
@@ -237,11 +238,10 @@
     </div>
 
     <div class="card">
-      <h2>Score a claim yourself</h2>
-      <p class="sub">The paper's coders are three language models reading with a codebook.
-        This box is only a rough sketch of the six specificity points with pattern rules,
-        so you can feel what "specific" means. Paste an AI sentence from any annual
-        report, or try the example.</p>
+      <h2>Apply the specificity criteria</h2>
+      <p class="sub">The study's coders are three language models reading with a codebook; this
+        panel approximates the six specificity criteria with pattern rules to illustrate what
+        "specific" means. Paste an AI sentence from any annual report, or load an example.</p>
       <div class="scorer">
         <textarea id="sc-in" rows="3" spellcheck="false"></textarea>
         <div class="scorer-row">
@@ -256,8 +256,8 @@
 
 </main>
 
-<script src="js/charts.js?v=4"></script>
-<script src="js/hero.js?v=4"></script>
-<script src="js/app.js?v=4"></script>
+<script src="js/charts.js?v=5"></script>
+<script src="js/hero.js?v=5"></script>
+<script src="js/app.js?v=5"></script>
 </body>
 </html>
