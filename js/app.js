@@ -8,7 +8,7 @@
   'use strict';
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
-  const V = '?v=5';                                        // bump on each release: GitHub Pages caches hard
+  const V = '?v=6';                                        // bump on each release: GitHub Pages caches hard
   const J = (p) => fetch('data/' + p + V).then((r) => r.json());
   const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function countTo(el, to, suffix) {                       // a stat tile counts up to its value once
@@ -197,11 +197,11 @@
   function h2Forests(M) {
     const host = $('#h2-forests'); host.innerHTML = '';
     [{ model: 'H2 L1_LOG_AI_PAT_STOCK x INTERNAL_DEV', main: 'L1_LOG_AI_PAT_STOCK',
-       title: 'AI patents × the sector builds AI in-house (S₂)',
-       rows: [['L1_LOG_AI_PAT_STOCK', 'AI patents alone'], ['RxM', '× builds in-house']] },
+       title: 'AI patent portfolio × internal AI development (S₂)',
+       rows: [['L1_LOG_AI_PAT_STOCK', 'AI patent portfolio alone'], ['RxM', '× internal development']] },
      { model: 'H2 L1_RD_SALES0 x HIGH_AIIE', main: 'L1_RD_SALES0',
-       title: 'R&D × high industry AI exposure (S₁)',
-       rows: [['L1_RD_SALES0', 'R&D alone'], ['RxM', '× high AI exposure']] }]
+       title: 'R&D intensity × high industry AI exposure (S₁)',
+       rows: [['L1_RD_SALES0', 'R&D intensity alone'], ['RxM', '× high AI exposure']] }]
       .forEach((cfgRow) => {
         const div = document.createElement('div');
         div.innerHTML = '<h3 class="mini-h">' + cfgRow.title + '</h3><div class="chart"></div>';

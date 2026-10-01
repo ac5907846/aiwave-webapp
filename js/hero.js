@@ -269,6 +269,34 @@
     }
   }
 
-  global.Hero = { init: init, pause: pause,
-                  stage: function (s) { pause(); setStage(s, 12); } };     // deterministic hook for tests and screenshots
+  /* the SVG twin of the current stage, for vector print captures: the canvas is replaced by an
+     SVG with one rect per filing, so the screenshot figure keeps every dot vector */
+  function vector() {
+    if (!D || !cv) return false;
+    var w = cv.width / DPR, h = cv.height / DPR;
+    var sec = cur.stage === 3, L = sec ? layouts.sector : layouts.year;
+    var p = L.p - 0.7, out = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + w + ' ' + h +
+                              '" width="' + w + '" height="' + h + '" role="img">'];
+    for (var i = 0; i < dots.length; i++) {
+      var d = dots[i], x = sec ? d.sx : d.yx, y = sec ? d.sy : d.yy;
+      out.push('<rect x="' + (x - p / 2).toFixed(1) + '" y="' + (y - p / 2).toFixed(1) +
+               '" width="' + p.toFixed(1) + '" height="' + p.toFixed(1) +
+               '" fill="' + dotColor(d, cur.stage, cur.sweep) + '"/>');
+    }
+    var tx = function (x, s) { out.push('<text x="' + x + '" y="' + (h - 6) + '" font-family="Inter,sans-serif" font-size="11" fill="#8a8578" text-anchor="middle">' + s + '</text>'); };
+    if (!sec) { for (var c = 0; c < 12; c += 2) tx(layouts.year.x0[c] + layouts.year.colW / 2, String(2014 + c)); }
+    else {
+      var Ls = layouts.sector, half = Ls.x0[Ls.nInh - 1] + Ls.colW;
+      tx((Ls.x0[0] + half) / 2, 'develop AI internally');
+      tx((Ls.x0[Ls.nInh] + Ls.x0[8] + Ls.colW) / 2, 'obtain AI externally');
+    }
+    out.push('</svg>');
+    var host = document.createElement('div');
+    host.innerHTML = out.join('');
+    cv.replaceWith(host.firstChild);
+    return true;
+  }
+
+  global.Hero = { init: init, pause: pause, vector: vector,
+                  stage: function (s) { pause(); setStage(s, 12); } };     // deterministic hooks for tests and screenshots
 })(window);
