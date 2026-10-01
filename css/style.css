@@ -414,3 +414,16 @@ mark{background:color-mix(in srgb,var(--c3) 40%,transparent);color:inherit;
 .tour-bar{position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--accent);
   transform:scaleX(0);transform-origin:0 50%;display:block}
 @media(max-width:760px){.hero-wrap{grid-template-columns:1fr}.hero-read{min-height:0;flex-direction:row;align-items:baseline;flex-wrap:wrap;gap:10px}}
+
+/* animated verdict cards (2026-10-01) */
+#ov-verdicts .verdict{opacity:0;transform:translateY(10px);cursor:pointer;
+  transition:border-color .35s,box-shadow .35s,transform .35s,background .35s}
+#ov-verdicts .verdict.pop{animation:vpop .55s cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes vpop{to{opacity:1;transform:none}}
+#ov-verdicts .verdict:hover{border-color:var(--accent);transform:translateY(-2px);
+  box-shadow:0 4px 14px rgba(20,40,80,.08)}
+#ov-verdicts .verdict.live{border-color:var(--accent);background:var(--accent-soft);
+  box-shadow:0 4px 14px rgba(20,40,80,.08)}
+@media (prefers-reduced-motion: reduce){
+  #ov-verdicts .verdict{opacity:1;transform:none;transition:none;animation:none}
+}

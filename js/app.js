@@ -8,7 +8,7 @@
   'use strict';
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
-  const V = '?v=3';                                        // bump on each release: GitHub Pages caches hard
+  const V = '?v=4';                                        // bump on each release: GitHub Pages caches hard
   const J = (p) => fetch('data/' + p + V).then((r) => r.json());
   const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function countTo(el, to, suffix) {                       // a stat tile counts up to its value once
@@ -111,8 +111,23 @@
        'R&D × litigation exposure ' + pp(h3r) + ' within firm, but ' + pp(h3rB) + ' between firms and in no single sector'],
     ];
     $('#ov-verdicts').innerHTML = rows.map(([cls, tag, title, sub]) =>
-      '<div class="verdict ' + cls + '"><span class="vtag">' + tag + '</span>' +
-      '<b>' + title + '</b><small>' + sub + '</small></div>').join('');
+      '<div class="verdict ' + cls + '" role="button" tabindex="0" title="Open the Findings view">' +
+      '<span class="vtag">' + tag + '</span><b>' + title + '</b><small>' + sub + '</small></div>').join('');
+    const cards = $$('#ov-verdicts .verdict');
+    cards.forEach((c) => {
+      c.addEventListener('click', () => show('findings'));
+      c.addEventListener('keydown', (e) => { if (e.key === 'Enter') show('findings'); });
+    });
+    if (REDUCED) { cards.forEach((c) => c.classList.add('pop')); return; }
+    cards.forEach((c, i) => { c.style.animationDelay = (250 + i * 180) + 'ms'; c.classList.add('pop'); });
+    let k = -1;
+    const spot = setInterval(() => {
+      k = (k + 1) % (cards.length + 1);
+      cards.forEach((c, i) => c.classList.toggle('live', i === k));
+    }, 2400);
+    const stopSpot = () => { clearInterval(spot); cards.forEach((c) => c.classList.remove('live')); };
+    document.addEventListener('pointerdown', stopSpot, { once: true, capture: true });
+    window.addEventListener('wheel', stopSpot, { once: true, passive: true, capture: true });
   }
 
   function diffusion(D, k) {
