@@ -8,9 +8,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=7">
-<link rel="preload" href="data/headline.json?v=7" as="fetch" crossorigin>
-<link rel="preload" href="data/hero.json?v=7" as="fetch" crossorigin>
+<link rel="stylesheet" href="css/style.css?v=8">
+<link rel="preload" href="data/headline.json?v=8" as="fetch" crossorigin>
+<link rel="preload" href="data/hero.json?v=8" as="fetch" crossorigin>
 </head>
 <body>
 
@@ -41,13 +41,14 @@
     <div class="hero">
       <h1>When does corporate AI disclosure convey information <em>about technological resources?</em></h1>
       <p class="lede">
-        Corporate disclosure about artificial intelligence has expanded rapidly, yet most of it is
-        generic. This study distinguishes <b>specific capability claims</b>, sentences that describe
-        the firm&rsquo;s own AI capability and satisfy at least three of six specificity criteria, from
-        generic and firm-specific AI risk language, and examines whether these claims are associated
-        with technological resources: R&amp;D intensity, AI patent portfolios, and the AI workforce
-        share. The associations are stronger where a resource is relevant to how the industry obtains
-        AI, and weaker where securities litigation exposure is greater.
+        Corporate disclosure about artificial intelligence (AI) has expanded rapidly, yet much of it
+        describes general risks. This study distinguishes <b>specific AI capability claims</b>,
+        sentences that describe the firm&rsquo;s own AI capability and satisfy at least three of six
+        specificity criteria, from generic and firm-specific AI risk disclosure, and examines whether
+        these claims track technological resources: R&amp;D intensity, AI patent portfolios, and the
+        AI workforce share. The associations are stronger where a resource is relevant to how the
+        industry develops or uses AI, and litigation exposure weakens the patent-disclosure
+        association.
       </p>
     </div>
 
@@ -75,7 +76,13 @@
     </div>
 
     <div class="card">
-      <h2>The main results</h2>
+      <div class="vhead">
+        <h2>The main results</h2>
+        <button id="ov-est" class="btn ghost" aria-pressed="false">Show the estimates</button>
+      </div>
+      <p class="sub">Each card states one finding in words; the estimates behind it (coefficient
+        signs and p-values, within | between firms) appear with the button and in full in the
+        Findings view.</p>
       <div class="verdicts" id="ov-verdicts"></div>
     </div>
 
@@ -158,12 +165,12 @@
   <section id="view-sectors" class="view" hidden>
     <div class="hero">
       <h1>Nine sectors, <em>two ways of obtaining AI</em></h1>
-      <p class="lede">Five sectors are classified as primarily developing AI internally (software
+      <p class="lede">In five sectors internal AI development is relatively important (software
         and IT services, computers and chips, aerospace and defense, auto manufacturing, and
-        pharma and biotech); four as primarily obtaining it from external providers (retail,
+        pharma and biotech); four primarily obtain AI through external providers (retail,
         utilities, construction, and construction machinery). This classification is the
         congruence moderator S&#8322;: an AI patent portfolio is expected to be more closely
-        associated with claims where AI is developed internally.</p>
+        associated with capability claims where AI is developed internally.</p>
     </div>
     <div id="sec-cards"></div>
   </section>
@@ -173,7 +180,7 @@
     <div class="hero">
       <h1>The filings <em>behind the measures</em></h1>
       <p class="lede">
-        One square per firm-year, coloured by its coded AI disclosure. Hovering a square shows the
+        One square per firm-year, colored by its coded AI disclosure. Hovering a square shows the
         filing's highest-scoring coded sentence, the top specific capability claim where one
         exists; clicking opens that 10-K on sec.gov. Search covers all nine sectors.
       </p>
@@ -204,8 +211,8 @@
     <div class="card prose">
       <h2>Data</h2>
       <p>Every original 10-K filed on SEC EDGAR by US registrants in nine SIC-defined
-        sectors, fiscal years 2014&ndash;2025, frozen under a manifest. Resources and
-        controls come from Compustat and SEC XBRL at t&minus;1; AI patents from the USPTO
+        sectors, fiscal years 2014 to 2025, frozen under a manifest. Resources and
+        controls come from Compustat and SEC XBRL at t-1; AI patents from the USPTO
         Artificial Intelligence Patent Dataset and PatentsView, accumulated with 15%
         annual depreciation; the AI-worker share from the replication package of a
         published study (available to fiscal year 2022); securities class actions from
@@ -226,7 +233,7 @@
       <h2>The designs</h2>
       <p>Within firm: firm and year fixed effects, so a firm is compared with itself as
         its resources change. Between firms: sector &times; year fixed effects, so a firm
-        is compared with its sector peers in the same year. Controls at t&minus;1: size,
+        is compared with its sector peers in the same year. Controls at t-1: size,
         leverage, cash, capex, ROA, R&amp;D indicators and 10-K length at t. Standard
         errors are clustered by firm. The operating screen keeps firms with at least $10M
         of assets or revenue and a 10-K of at least 5,000 words.</p>
@@ -267,8 +274,8 @@
 
 </main>
 
-<script src="js/charts.js?v=7"></script>
-<script src="js/hero.js?v=7"></script>
-<script src="js/app.js?v=7"></script>
+<script src="js/charts.js?v=8"></script>
+<script src="js/hero.js?v=8"></script>
+<script src="js/app.js?v=8"></script>
 </body>
 </html>

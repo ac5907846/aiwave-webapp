@@ -8,7 +8,7 @@
   'use strict';
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
-  const V = '?v=7';                                        // bump on each release: GitHub Pages caches hard
+  const V = '?v=8';                                        // bump on each release: GitHub Pages caches hard
   const J = (p) => fetch('data/' + p + V).then((r) => r.json());
   const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function countTo(el, to, suffix) {                       // a stat tile counts up to its value once
@@ -99,25 +99,68 @@
     const h2b = est(M, 'H2 L1_LOG_AI_PAT_STOCK x INTERNAL_DEV', 'RxM', 'WITHIN'), h2bB = est(M, 'H2 L1_LOG_AI_PAT_STOCK x INTERNAL_DEV', 'RxM', 'BETWEEN');
     const h3r = est(M, 'H3 L1_RD_SALES0 baseline', 'RxL', 'WITHIN'), h3rB = est(M, 'H3 L1_RD_SALES0 baseline', 'RxL', 'BETWEEN');
     const h3p = est(M, 'H3 L1_LOG_AI_PAT_STOCK baseline', 'RxL', 'WITHIN'), h3pB = est(M, 'H3 L1_LOG_AI_PAT_STOCK baseline', 'RxL', 'BETWEEN');
+    // each finding as a small animated scene (owner 2026-10-01): the statement in words on the card, the
+    // estimates behind a toggle; every number still comes from models.json
+    const FO = 'style="transform-box:fill-box;transform-origin:center"';
+    const block = (x, y, lab) => '<g><rect x="' + x + '" y="' + y + '" width="46" height="17" rx="3" fill="#D4EBF2" stroke="#555" stroke-width=".8"/>' +
+      '<text x="' + (x + 23) + '" y="' + (y + 12) + '" text-anchor="middle" font-size="8.5">' + lab + '</text></g>';
+    const bubble = (x, y, lab, cls) => '<g class="' + (cls || '') + '" ' + FO + '><rect x="' + x + '" y="' + y + '" width="60" height="26" rx="8" fill="#D9EAD3" stroke="#555" stroke-width=".8"/>' +
+      '<path d="M' + (x + 12) + ',' + (y + 25) + ' l-5,8 l11,-3 z" fill="#D9EAD3" stroke="#555" stroke-width=".8"/>' +
+      '<text x="' + (x + 30) + '" y="' + (y + 17) + '" text-anchor="middle" font-size="8.5">' + lab + '</text></g>';
+    const arrow = (cls, extra) => '<g class="' + cls + '" ' + (extra || '') + '><line x1="62" y1="36" x2="136" y2="36" stroke="#3a3a3a" stroke-width="2"/>' +
+      '<path d="M136,31 l9,5 l-9,5 z" fill="#3a3a3a"/></g>';
+    const scenes = {
+      h1: '<svg class="vscene" viewBox="0 0 220 76">' + block(8, 10, 'R&amp;D') + block(8, 48, 'patents') +
+          arrow('a-draw') + bubble(148, 22, 'specific claim', 'a-pop') + '</svg>',
+      h2: '<svg class="vscene" viewBox="0 0 220 76">' +
+          '<rect x="104" y="18" width="104" height="40" rx="5" fill="#EAD1DC" stroke="#555" stroke-width=".8"/>' +
+          '<text x="178" y="35" text-anchor="middle" font-size="8.5">sector that</text>' +
+          '<text x="178" y="47" text-anchor="middle" font-size="8.5">fits the resource</text>' +
+          '<rect x="112" y="29" width="24" height="18" fill="#fff" stroke="#555" stroke-width=".7"/>' +
+          '<g class="a-slide" ' + FO + '><rect x="114" y="31" width="20" height="14" rx="2" fill="#D4EBF2" stroke="#555" stroke-width=".8"/></g>' +
+          '<text x="12" y="14" font-size="8.5" fill="#555">the resource lands where it fits</text></svg>',
+      h3b: '<svg class="vscene" viewBox="0 0 220 76">' + block(8, 28, 'patents') +
+           arrow('a-thin', 'opacity=".35"') + bubble(148, 22, 'claims', 'a-shrink') +
+           '<g class="a-snow" ' + FO + '><g stroke="#0b3d5c" stroke-width="1.6" stroke-linecap="round">' +
+           '<line x1="92" y1="10" x2="106" y2="24"/><line x1="106" y1="10" x2="92" y2="24"/><line x1="99" y1="7" x2="99" y2="27"/><line x1="89" y1="17" x2="109" y2="17"/></g></g></svg>',
+      h3a: '<svg class="vscene" viewBox="0 0 220 76">' + block(8, 28, 'R&amp;D') +
+           '<g opacity=".4"><line x1="62" y1="36" x2="136" y2="36" stroke="#3a3a3a" stroke-width="1.6" stroke-dasharray="5 4"/>' +
+           '<path d="M136,31 l9,5 l-9,5 z" fill="#3a3a3a"/></g>' + bubble(148, 22, 'claims?', '') +
+           '<g class="a-scan" ' + FO + '><circle cx="99" cy="30" r="11" fill="none" stroke="#333" stroke-width="2"/>' +
+           '<line x1="107" y1="38" x2="116" y2="47" stroke="#333" stroke-width="3" stroke-linecap="round"/></g></svg>',
+    };
     const rows = [
-      ['ok', 'H1 alignment', 'Technological resources predict specific capability claims',
+      ['ok', 'H1 alignment', scenes.h1, 'Resources back the claims',
+       'Firms with more R&D and larger AI patent portfolios make more specific AI capability claims.',
        'R&D intensity ' + pp(est(M, rd[0], rd[1], 'WITHIN')) + ' | ' + pp(est(M, rd[0], rd[1], 'BETWEEN')) +
        ' · AI patent portfolio ' + pp(est(M, ap[0], ap[1], 'WITHIN')) + ' | ' + pp(est(M, ap[0], ap[1], 'BETWEEN')) + ', within | between firms'],
-      ['ok', 'H2 congruence', 'Stronger where the resource is relevant to the industry',
+      ['ok', 'H2 congruence', scenes.h2, 'Resources matter most where they fit the industry',
+       'Patents align with claims in sectors that develop AI internally; R&D where industry AI exposure is high.',
        'AI patent portfolio × internal AI development ' + pp(h2b) + ' | ' + pp(h2bB) +
        ' · R&D intensity × high industry AI exposure ' + pp(h2a) + ' | ' + pp(h2aB)],
-      ['ok', 'H3b chilling', 'Litigation exposure weakens the patent association',
+      ['ok', 'H3b chilling', scenes.h3b, 'Litigation cools the patent-backed claims',
+       'Where securities lawsuits are more common in a sector, the patent-claims association weakens.',
        'AI patent portfolio × litigation exposure ' + pp(h3p) + ' | ' + pp(h3pB)],
-      ['half', 'H3a screening', 'Limited evidence: R&D intensity, within firm only',
+      ['half', 'H3a screening', scenes.h3a, 'Little sign of screening',
+       'Litigation strengthens the R&D association only in the pooled within-firm model.',
        'R&D intensity × litigation exposure ' + pp(h3r) + ' within firm, but ' + pp(h3rB) + ' between firms and in no single sector'],
     ];
-    $('#ov-verdicts').innerHTML = rows.map(([cls, tag, title, sub]) =>
+    $('#ov-verdicts').innerHTML = rows.map(([cls, tag, scene, title, plain, stat]) =>
       '<div class="verdict ' + cls + '" role="button" tabindex="0" title="Open the Findings view">' +
-      '<span class="vtag">' + tag + '</span><b>' + title + '</b><small>' + sub + '</small></div>').join('');
+      '<span class="vtag">' + tag + '</span>' + scene + '<b>' + title + '</b><small>' + plain + '</small>' +
+      '<div class="vstats" hidden>' + stat + '</div></div>').join('');
     const cards = $$('#ov-verdicts .verdict');
     cards.forEach((c) => {
       c.addEventListener('click', () => show('findings'));
       c.addEventListener('keydown', (e) => { if (e.key === 'Enter') show('findings'); });
+    });
+    const estBtn = $('#ov-est');
+    estBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const showIt = estBtn.getAttribute('aria-pressed') !== 'true';
+      estBtn.setAttribute('aria-pressed', String(showIt));
+      estBtn.textContent = showIt ? 'Hide the estimates' : 'Show the estimates';
+      $$('#ov-verdicts .vstats').forEach((d) => (d.hidden = !showIt));
     });
     if (REDUCED) { cards.forEach((c) => c.classList.add('pop')); return; }
     cards.forEach((c, i) => { c.style.animationDelay = (250 + i * 180) + 'ms'; c.classList.add('pop'); });
