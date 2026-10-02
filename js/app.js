@@ -8,7 +8,7 @@
   'use strict';
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
-  const V = '?v=9';                                        // bump on each release: GitHub Pages caches hard
+  const V = '?v=10';                                        // bump on each release: GitHub Pages caches hard
   const J = (p) => fetch('data/' + p + V).then((r) => r.json());
   const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function countTo(el, to, suffix) {                       // a stat tile counts up to its value once
@@ -102,6 +102,21 @@
     // each finding as a small animated scene (owner 2026-10-01): the statement in words on the card, the
     // estimates behind a toggle; every number still comes from models.json
     const FO = 'style="transform-box:fill-box;transform-origin:center"';
+    const flake = (cx, cy, r) => {                                         // a six-fold snowflake: arms with outward branches
+      let s = '';
+      for (let a = 0; a < 6; a++) {
+        const d = a * Math.PI / 3, ux = Math.cos(d), uy = Math.sin(d);
+        s += '<line x1="' + cx + '" y1="' + cy + '" x2="' + (cx + r * ux).toFixed(1) + '" y2="' + (cy + r * uy).toFixed(1) + '"/>';
+        const bx = cx + .55 * r * ux, by = cy + .55 * r * uy;
+        for (const w of [-1, 1]) {
+          const b = d + w * Math.PI / 3;
+          s += '<line x1="' + bx.toFixed(1) + '" y1="' + by.toFixed(1) + '" x2="' + (bx + .4 * r * Math.cos(b)).toFixed(1) +
+               '" y2="' + (by + .4 * r * Math.sin(b)).toFixed(1) + '"/>';
+        }
+      }
+      return '<g stroke="#2166ac" stroke-width="1.2" stroke-linecap="round" fill="none">' + s +
+             '<circle cx="' + cx + '" cy="' + cy + '" r="1.4" fill="#2166ac" stroke="none"/></g>';
+    };
     const block = (x, y, lab) => '<g><rect x="' + x + '" y="' + y + '" width="46" height="17" rx="3" fill="#D4EBF2" stroke="#555" stroke-width=".8"/>' +
       '<text x="' + (x + 23) + '" y="' + (y + 12) + '" text-anchor="middle" font-size="8.5">' + lab + '</text></g>';
     const bubble = (x, y, lab, cls) => '<g class="' + (cls || '') + '" ' + FO + '><rect x="' + x + '" y="' + y + '" width="60" height="26" rx="8" fill="#D9EAD3" stroke="#555" stroke-width=".8"/>' +
@@ -120,8 +135,7 @@
           '<g class="a-slide" ' + FO + '>' + block(108, 29, 'resource') + '</g></svg>',
       h3b: '<svg class="vscene" viewBox="0 0 220 76">' + block(8, 28, 'patents') +
            arrow('a-thin', 'opacity=".35"') + bubble(148, 22, 'claims', 'a-shrink') +
-           '<g class="a-snow" ' + FO + '><g stroke="#0b3d5c" stroke-width="1.6" stroke-linecap="round">' +
-           '<line x1="92" y1="10" x2="106" y2="24"/><line x1="106" y1="10" x2="92" y2="24"/><line x1="99" y1="7" x2="99" y2="27"/><line x1="89" y1="17" x2="109" y2="17"/></g></g></svg>',
+           '<g class="a-snow" ' + FO + '>' + flake(99, 15, 11) + '</g></svg>',
       h3a: '<svg class="vscene" viewBox="0 0 220 76">' + block(8, 28, 'R&amp;D') +
            '<g opacity=".4"><line x1="62" y1="36" x2="136" y2="36" stroke="#3a3a3a" stroke-width="1.6" stroke-dasharray="5 4"/>' +
            '<path d="M136,31 l9,5 l-9,5 z" fill="#3a3a3a"/></g>' + bubble(148, 22, 'claims?', '') +
@@ -391,6 +405,8 @@
     }).join('');
     grid.innerHTML = head + html + (rows.length > cap
       ? '<p class="m-note">Showing the first ' + cap + ' of ' + fmtInt(rows.length) + ' firms; refine the search to see the rest.</p>' : '');
+    const names = grid.querySelectorAll('.inv-name');
+    rows.slice(0, names.length).forEach((f, i) => names[i].addEventListener('click', () => firmPanel(f)));
     grid.querySelectorAll('a.inv-cell').forEach((a) => {
       a.addEventListener('mousemove', async (e) => {
         const d = a.dataset;
@@ -406,6 +422,48 @@
       });
       a.addEventListener('mouseleave', C.hideTip);
     });
+  }
+
+  // the firm profile (owner 2026-10-01): clicking a company name shows its disclosure and resource series,
+  // the same firm-year values the models read; a sparkline skips years where the value is missing
+  function fspark(years, vals, color) {
+    const W2 = 150, H2 = 34, pts = [];
+    const vs = vals.filter((v) => v != null);
+    if (!vs.length) return '<span class="fp-na">no data</span>';
+    const max = Math.max(...vs, 1e-9), x = (i) => (i / Math.max(1, vals.length - 1)) * W2;
+    const y = (v) => H2 - 3 - (v / max) * (H2 - 8);
+    let seg = [];
+    vals.forEach((v, i) => {
+      if (v == null) { if (seg.length) pts.push(seg); seg = []; }
+      else seg.push(x(i).toFixed(1) + ',' + y(v).toFixed(1));
+    });
+    if (seg.length) pts.push(seg);
+    return '<svg viewBox="0 0 ' + W2 + ' ' + H2 + '" class="fp-spark">' +
+      pts.map((p) => p.length > 1
+        ? '<polyline points="' + p.join(' ') + '" fill="none" stroke="' + color + '" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>'
+        : '<circle cx="' + p[0].split(',')[0] + '" cy="' + p[0].split(',')[1] + '" r="2" fill="' + color + '"/>').join('') + '</svg>';
+  }
+  function firmPanel(f) {
+    const host = $('#firm-panel');
+    const ys = f.years, fys = ys.map((y) => y[0]);
+    const lastOf = (vals) => { for (let i = vals.length - 1; i >= 0; i--) if (vals[i] != null) return vals[i]; return null; };
+    const fmtPat = (v) => (v == null ? 'n/a' : v >= 10 ? fmtInt(Math.round(v)) : v.toFixed(1));
+    const series = [
+      ['Specific capability claims (C)', 'per 10,000 words', ys.map((y) => y[6]), '#111111', (v) => (v == null ? 'n/a' : fnum(v))],
+      ['R&D / revenue (R₁), t-1', 'ratio, capped at 1', ys.map((y) => y[8]), '#0b3d5c', (v) => (v == null ? 'n/a' : fnum(v))],
+      ['AI patent stock (R₂), t-1', 'patents, before the log', ys.map((y) => y[9]), '#6a51a3', fmtPat],
+      ['AI-worker share (R₃), t-1', 'share of employees, to FY2022', ys.map((y) => y[10]), '#1f8a70', (v) => (v == null ? 'n/a' : fnum(v))],
+    ];
+    host.innerHTML = '<div class="fp-head"><b>' + esc(f.name) + '</b><span>' + esc(f.ind) +
+      ' · FY' + fys[0] + ' to FY' + fys[fys.length - 1] + '</span>' +
+      '<button class="fp-x" aria-label="Close">×</button></div><div class="fp-grid">' +
+      series.map(([lab, unit, vals, col, fm]) =>
+        '<div class="fp-item"><div class="fp-lab">' + lab + '</div><div class="fp-unit">' + unit + '</div>' +
+        fspark(fys, vals, col) + '<div class="fp-last">latest ' + fm(lastOf(vals)) + '</div></div>').join('') +
+      '</div><p class="fp-note">These are the firm-year values the models read; a gap means the value is missing for that year.</p>';
+    host.hidden = false;
+    host.querySelector('.fp-x').addEventListener('click', () => (host.hidden = true));
+    host.scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'nearest' });
   }
 
   // ============================================================== METHOD

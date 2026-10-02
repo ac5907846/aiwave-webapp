@@ -151,16 +151,19 @@ def main():
     # ------------------------------------------------------------- coder agreement (method)
     jput([dict(field=r.field, pair=r.pair, n=int(r.n), agree=r.agreement) for _, r in AG.iterrows()], "agreement")
 
-    # ------------------------------------------------------------- filings grid + firm search
-    # one record per firm; per year: [fy, operating&coded, n AI sentences, nC, nG, nF, C per 10k words, adsh]
+    # ------------------------------------------------------------- filings grid + firm search + firm resources
+    # one record per firm; per year: [fy, operating&coded, n AI sentences, nC, nG, nF, C per 10k words, adsh,
+    # R&D / revenue at t-1, AI patent stock at t-1 (before the log), AI-worker share at t-1]
     Ms = M.sort_values(["name", "fy"])
+    num = lambda v, d: None if pd.isna(v) else round(float(v), d)
     firms = []
     for cik, g in Ms.groupby("cik", sort=False):
         years = []
         for _, r in g.iterrows():
             years.append([int(r.fy), int(r.is_operating == 1 and r.coded == 1), int(r.n_ai),
                           int(r.n_C), int(r.n_G), int(r.n_F),
-                          None if pd.isna(r.C) else round(float(r.C), 3), r.adsh])
+                          None if pd.isna(r.C) else round(float(r.C), 3), r.adsh,
+                          num(r.L1_RD_SALES0, 3), num(r.L1_AI_PAT_STOCK, 1), num(r.L1_AI_WORKER, 4)])
         firms.append(dict(cik=int(cik), name=str(g["name"].iloc[-1]), ind=g["industry"].iloc[-1], years=years))
     firms.sort(key=lambda f: f["name"])
     jput(firms, "firms")

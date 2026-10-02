@@ -427,6 +427,24 @@ mark{background:color-mix(in srgb,var(--c3) 40%,transparent);color:inherit;
 .vscene .a-scan{animation:vScan 6s ease-in-out infinite}
 @media(prefers-reduced-motion:reduce){.vscene *{animation:none!important}}
 
+/* --------------------------------------------- firm profile panel (2026-10-01) */
+.firmpanel{border:1px solid var(--line-2);border-radius:var(--r-s);background:var(--surface-2);
+  padding:13px 15px 10px;margin:0 0 14px}
+.fp-head{display:flex;align-items:baseline;gap:10px;margin-bottom:9px}
+.fp-head b{font-size:14.5px}
+.fp-head span{font-size:12px;color:var(--ink-3);flex:1}
+.fp-x{font:inherit;font-size:18px;line-height:1;border:0;background:none;color:var(--ink-3);
+  cursor:pointer;padding:0 4px;border-radius:4px}
+.fp-x:hover{background:var(--surface);color:var(--ink)}
+.fp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.fp-item{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-s);padding:9px 11px}
+.fp-lab{font-size:12px;font-weight:650;line-height:1.3}
+.fp-unit{font-size:10.5px;color:var(--ink-3);margin:1px 0 6px}
+.fp-spark{display:block;width:100%;height:34px;overflow:visible}
+.fp-na{font-size:11.5px;color:var(--ink-3);display:block;padding:9px 0}
+.fp-last{font-size:11.5px;color:var(--ink-2);margin-top:5px;font-variant-numeric:tabular-nums}
+.fp-note{font-size:11.5px;color:var(--ink-3);margin:9px 0 0}
+
 /* --------------------------------------------- the variables, one by one (2026-10-01) */
 .vargrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
 .varcard{border:1px solid var(--line);border-radius:var(--r-s);padding:13px 14px 11px;

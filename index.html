@@ -8,9 +8,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=9">
-<link rel="preload" href="data/headline.json?v=9" as="fetch" crossorigin>
-<link rel="preload" href="data/hero.json?v=9" as="fetch" crossorigin>
+<link rel="stylesheet" href="css/style.css?v=10">
+<link rel="preload" href="data/headline.json?v=10" as="fetch" crossorigin>
+<link rel="preload" href="data/hero.json?v=10" as="fetch" crossorigin>
 </head>
 <body>
 
@@ -182,7 +182,9 @@
       <p class="lede">
         One square per firm-year, colored by its coded AI disclosure. Hovering a square shows the
         filing's highest-scoring coded sentence, the top specific capability claim where one
-        exists; clicking opens that 10-K on sec.gov. Search covers all nine sectors.
+        exists; clicking a square opens that 10-K on sec.gov, and clicking a company name shows
+        the firm's disclosure and resource series: R&amp;D / revenue, AI patent stock, and the
+        AI-worker share. Search covers all nine sectors.
       </p>
     </div>
     <div class="card">
@@ -200,6 +202,7 @@
         <span><i style="background:var(--s3)"></i>1&ndash;2 specific claims</span>
         <span><i style="background:var(--s5)"></i>3 or more specific claims</span>
       </div>
+      <div id="firm-panel" class="firmpanel" hidden></div>
       <div id="inv-grid" class="inv"><p class="m-note">Loading the filings grid&hellip;</p></div>
     </div>
   </section>
@@ -274,8 +277,8 @@
 
 </main>
 
-<script src="js/charts.js?v=9"></script>
-<script src="js/hero.js?v=9"></script>
-<script src="js/app.js?v=9"></script>
+<script src="js/charts.js?v=10"></script>
+<script src="js/hero.js?v=10"></script>
+<script src="js/app.js?v=10"></script>
 </body>
 </html>
