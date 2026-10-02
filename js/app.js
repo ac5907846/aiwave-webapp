@@ -8,7 +8,7 @@
   'use strict';
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
-  const V = '?v=10';                                        // bump on each release: GitHub Pages caches hard
+  const V = '?v=11';                                        // bump on each release: GitHub Pages caches hard
   const J = (p) => fetch('data/' + p + V).then((r) => r.json());
   const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function countTo(el, to, suffix) {                       // a stat tile counts up to its value once
@@ -128,11 +128,11 @@
       h1: '<svg class="vscene" viewBox="0 0 220 76">' + block(8, 10, 'R&amp;D') + block(8, 48, 'patents') +
           arrow('a-draw') + bubble(148, 22, 'specific claim', 'a-pop') + '</svg>',
       h2: '<svg class="vscene" viewBox="0 0 220 76">' +
-          '<rect x="100" y="16" width="108" height="44" rx="5" fill="#EAD1DC" stroke="#555" stroke-width=".8"/>' +
-          '<text x="181" y="34" text-anchor="middle" font-size="8.5">sector that</text>' +
-          '<text x="181" y="46" text-anchor="middle" font-size="8.5">fits the resource</text>' +
-          '<rect x="106" y="27" width="50" height="21" fill="#fff" stroke="#555" stroke-width=".7"/>' +
-          '<g class="a-slide" ' + FO + '>' + block(108, 29, 'resource') + '</g></svg>',
+          '<rect x="112" y="12" width="96" height="40" rx="5" fill="#EAD1DC" stroke="#555" stroke-width=".8"/>' +
+          '<text x="189" y="35" text-anchor="middle" font-size="8">sector</text>' +
+          '<rect x="120" y="22" width="50" height="21" fill="#fff" stroke="#555" stroke-width=".7"/>' +
+          '<g class="a-slide" ' + FO + '>' + block(122, 24, 'resource') + '</g>' +
+          '<text x="110" y="68" text-anchor="middle" font-size="8.5" fill="#555">the sector that fits the resource</text></svg>',
       h3b: '<svg class="vscene" viewBox="0 0 220 76">' + block(8, 28, 'patents') +
            arrow('a-thin', 'opacity=".35"') + bubble(148, 22, 'claims', 'a-shrink') +
            '<g class="a-snow" ' + FO + '>' + flake(99, 15, 11) + '</g></svg>',
