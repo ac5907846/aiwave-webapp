@@ -1,2 +1,4 @@
 __pycache__/
 _archive_data_*/
+_anonymous/
+publish_anonymous.py
