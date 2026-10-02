@@ -8,7 +8,7 @@
   'use strict';
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
-  const V = '?v=6';                                        // bump on each release: GitHub Pages caches hard
+  const V = '?v=7';                                        // bump on each release: GitHub Pages caches hard
   const J = (p) => fetch('data/' + p + V).then((r) => r.json());
   const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function countTo(el, to, suffix) {                       // a stat tile counts up to its value once
@@ -347,8 +347,82 @@
   }
 
   // ============================================================== METHOD
+  // What each variable is: the raw material it starts as, its source, and its distribution over
+  // the estimation sample. Stats come from data/variables.json, baked from the same results file
+  // as the manuscript's descriptive table; only the words here are typed.
+  const VARMETA = {
+    C: { name: 'Specific capability claims (C)', raw: '10-K sentences',
+         unit: 'sentences per 10,000 words',
+         src: 'Sentences of the filing, classified by the three coders: a claim describes the firm’s own AI capability and meets at least 3 of 6 specificity criteria.' },
+    G: { name: 'Generic AI risk (G)', raw: '10-K sentences',
+         unit: 'sentences per 10,000 words',
+         src: 'Boilerplate AI risk language that could appear in almost any firm’s filing.' },
+    F: { name: 'Firm-specific AI risk (F)', raw: '10-K sentences',
+         unit: 'sentences per 10,000 words',
+         src: 'AI risk language tied to the firm’s own products, operations or deployments.' },
+    L1_RD_SALES0: { name: 'R&D / revenue (R₁)', raw: 'accounting figures',
+         unit: 'ratio at t-1, capped at 1',
+         src: 'Two lines of the firm’s own financial statements (Compustat and SEC XBRL): R&D expense over revenue.' },
+    L1_LOG_AI_PAT_STOCK: { name: 'AI patent portfolio (R₂)', raw: 'patent grants',
+         unit: 'ln(1 + patent stock) at t-1',
+         src: 'USPTO patents classified as AI by the AI Patent Dataset, accumulated per firm with 15% annual depreciation.' },
+    L1_AI_WORKER: { name: 'AI-worker share (R₃)', raw: 'workforce records',
+         unit: 'share of employees at t-1',
+         src: 'The share of the firm’s employees in AI roles, from the replication package of a published study; available to fiscal year 2022.' },
+    HIGH_AIIE: { name: 'High industry AI exposure (S₁)', raw: 'occupation scores',
+         unit: 'above the panel median',
+         src: 'A published occupation-based AI exposure score of the firm’s four-digit NAICS industry, so exposure can differ within a sector.' },
+    INTERNAL_DEV: { name: 'Industry builds AI in-house (S₂)', raw: 'sector classification',
+         unit: 'in-house sector',
+         src: 'Equal to 1 in the five sectors classified as predominantly developing AI within their products or processes.' },
+    IND_LIT_RATE: { name: 'Litigation exposure (L)', raw: 'class actions',
+         unit: 'share of sector firms sued',
+         src: 'Securities class actions (Audit Analytics, Stanford Clearinghouse): the share of the sector’s firms named as defendants in the calendar year before the filing.' },
+  };
+  const fnum = (v) => {
+    if (v === 0) return '0';
+    const a = Math.abs(v);
+    const s = a >= 100 ? v.toFixed(0) : a >= 1 ? v.toFixed(2) : v.toFixed(3);
+    return s.replace(/^(-?)0\./, '$1.');
+  };
+  function varCards(VB) {
+    const host = $('#var-cards');
+    host.innerHTML = VB.map((v, i) => {
+      const m = VARMETA[v.key];
+      const W = 260, H = 64, n = v.counts.length, bw = W / n;
+      const peak = Math.sqrt(Math.max(...v.counts, 1));
+      const bars = v.counts.map((c, k) => {
+        const h = c ? Math.max(2, (Math.sqrt(c) / peak) * (H - 4)) : 0;
+        return c ? '<rect data-k="' + k + '" x="' + (k * bw + 0.5).toFixed(1) + '" y="' + (H - h).toFixed(1) +
+          '" width="' + (bw - 1).toFixed(1) + '" height="' + h.toFixed(1) + '"></rect>' : '';
+      }).join('');
+      const xl = v.binary ? ['0', '1'] : [fnum(v.edges[0]), fnum(v.edges[n])];
+      const tail = v.binary
+        ? 'equal to 1 in ' + pct(v.mean, 0) + ' of firm-years'
+        : (v.zero > 0.005 ? 'exactly zero in ' + pct(v.zero, 0) + ' of firm-years' : '');
+      return '<div class="varcard"><div class="vc-top"><b>' + m.name + '</b>' +
+        '<span class="vc-tag">' + m.raw + '</span></div>' +
+        '<p class="vc-src">' + m.src + '</p>' +
+        '<svg class="vc-hist" data-i="' + i + '" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' + bars + '</svg>' +
+        '<div class="vc-ax"><span>' + xl[0] + '</span><span>' + m.unit + '</span><span>' + xl[1] + '</span></div>' +
+        '<div class="vc-stats">N ' + fmtInt(v.n) + ' · mean ' + fnum(v.mean) + ' · SD ' + fnum(v.sd) +
+        ' · min ' + fnum(v.min) + ' · max ' + fnum(v.max) + (tail ? ' · ' + tail : '') + '</div></div>';
+    }).join('');
+    $$('#var-cards .vc-hist').forEach((svg) => {
+      const v = VB[+svg.dataset.i];
+      svg.querySelectorAll('rect').forEach((rc) => {
+        const k = +rc.dataset.k;
+        const range = v.binary ? (k ? '1' : '0')
+          : fnum(v.edges[k]) + ' to ' + fnum(v.edges[k + 1]);
+        rc.addEventListener('mousemove', (e) => C.showTip('<b>' + range + '</b><br>' +
+          fmtInt(v.counts[k]) + ' firm-years', e));
+        rc.addEventListener('mouseleave', C.hideTip);
+      });
+    });
+  }
   function initMethod() {
-    need(['agreement'], ({ agreement: A }) => {
+    need(['agreement', 'variables'], ({ agreement: A, variables: VB }) => {
+      varCards(VB);
       const fields = Array.from(new Set(A.map((r) => r.field)));
       const pairs = Array.from(new Set(A.map((r) => r.pair))).filter((p) => p !== 'no_majority');
       const name = { 'ministral-phi4': 'Ministral × Phi-4', 'ministral-qwen': 'Ministral × Qwen',

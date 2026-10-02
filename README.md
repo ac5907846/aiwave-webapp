@@ -35,7 +35,7 @@ transforms the paper itself uses (95% bands drawn as estimate plus or minus
 | **Findings** | H1 as three mini-forests (C vs the G/F falsification rows, within and between firms), H2 interaction forests, H3 marginal-effect curves over litigation exposure with 95% bands (design toggle), and per-sector H1 slopes with the Wald test (resource and design toggles) |
 | **Sectors** | one card per sector from Table 1: counts, disclosure shares, resources, litigation exposure, build-vs-buy pill, and a C-diffusion sparkline |
 | **Filings** | one square per company-year coloured by coded AI language; hover previews the filing's best coded sentence (top-scoring specific claim where one exists), click opens the 10-K on sec.gov; search spans all sectors |
-| **Method** | pipeline prose (lexicon, three coders, 2-of-3 vote, six specificity points, two designs), the coder-agreement table, and "Score a claim yourself": a rough six-point rubric sketch that also reveals the coders' own score on real example claims |
+| **Method** | pipeline prose (lexicon, three coders, 2-of-3 vote, six specificity points, two designs), the coder-agreement table, "The variables, one by one" (a card per model variable: the raw material it starts as, source, unit, distribution histogram and the Table-4 stats from `variables.json`), and "Score a claim yourself": a rough six-point rubric sketch that also reveals the coders' own score on real example claims |
 
 Deploy as before: push the folder to a Pages branch; the shared domain mounts
 each paper as a sub-site (CNAME kept).

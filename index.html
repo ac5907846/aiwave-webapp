@@ -8,9 +8,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=6">
-<link rel="preload" href="data/headline.json?v=6" as="fetch" crossorigin>
-<link rel="preload" href="data/hero.json?v=6" as="fetch" crossorigin>
+<link rel="stylesheet" href="css/style.css?v=7">
+<link rel="preload" href="data/headline.json?v=7" as="fetch" crossorigin>
+<link rel="preload" href="data/hero.json?v=7" as="fetch" crossorigin>
 </head>
 <body>
 
@@ -238,6 +238,17 @@
     </div>
 
     <div class="card">
+      <h2>The variables, one by one</h2>
+      <p class="sub">Every variable enters the models as one number per firm-year, but the raw
+        material differs: sentences of the 10-K, lines of the financial statements, patent grants,
+        workforce records, and securities class actions. Each panel shows the variable&rsquo;s
+        distribution over the estimation sample; hover a bar for the exact count (bar heights are
+        square-root scaled, since most firm-years sit at or near zero). The manuscript reports the
+        same statistics with pairwise correlations.</p>
+      <div class="vargrid" id="var-cards"></div>
+    </div>
+
+    <div class="card">
       <h2>Apply the specificity criteria</h2>
       <p class="sub">The study's coders are three language models reading with a codebook; this
         panel approximates the six specificity criteria with pattern rules to illustrate what
@@ -256,8 +267,8 @@
 
 </main>
 
-<script src="js/charts.js?v=6"></script>
-<script src="js/hero.js?v=6"></script>
-<script src="js/app.js?v=6"></script>
+<script src="js/charts.js?v=7"></script>
+<script src="js/hero.js?v=7"></script>
+<script src="js/app.js?v=7"></script>
 </body>
 </html>

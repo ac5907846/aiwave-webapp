@@ -399,6 +399,23 @@ mark{background:color-mix(in srgb,var(--c3) 40%,transparent);color:inherit;
 .sc-pt small{font-size:11px;color:var(--ink-3)}
 .m-note{font-size:12.5px;color:var(--ink-3);padding:10px 2px}
 
+/* --------------------------------------------- the variables, one by one (2026-10-01) */
+.vargrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.varcard{border:1px solid var(--line);border-radius:var(--r-s);padding:13px 14px 11px;
+  background:var(--surface);display:flex;flex-direction:column;gap:7px}
+.vc-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.vc-top b{font-size:13.5px;font-weight:650;line-height:1.3}
+.vc-tag{flex:none;font-size:10.5px;font-weight:600;color:var(--ink-2);background:var(--surface-2);
+  border-radius:99px;padding:2px 8px;white-space:nowrap}
+.vc-src{margin:0;font-size:12px;color:var(--ink-2);line-height:1.5;flex:1}
+.vc-hist{width:100%;height:58px;display:block}
+.vc-hist rect{fill:var(--s2);opacity:.85}
+.vc-hist rect:hover{fill:var(--s4);opacity:1}
+.vc-ax{display:flex;justify-content:space-between;gap:6px;font-size:10.5px;color:var(--ink-3);
+  border-top:1px solid var(--line);padding-top:3px;font-variant-numeric:tabular-nums}
+.vc-ax span:nth-child(2){text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vc-stats{font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums;line-height:1.45}
+
 /* ============================================= hero animation (2026-10-01) */
 .herocard{position:relative;padding-top:18px}
 .hero-wrap{display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:20px;align-items:center}

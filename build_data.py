@@ -127,6 +127,27 @@ def main():
                         suit=r.suit_rate_mean))
     jput(sec, "sectors")
 
+    # ------------------------------------------------------------- variables (method): what each measure is
+    # stats copied from d19_descriptives.csv (manuscript Table 4); histogram bins are a display transform of the
+    # same raw values on the same estimation sample (operating firms with a coded 10-K, FY2015-2025)
+    DESC = pd.read_csv(core.out("d19_descriptives.csv")).set_index("var")
+    dm = M[(M.is_operating == 1) & (M.coded == 1) & M.fy.between(2015, 2025)]
+    vout = []
+    for v in ["C", "G", "F", "L1_RD_SALES0", "L1_LOG_AI_PAT_STOCK", "L1_AI_WORKER",
+              "HIGH_AIIE", "INTERNAL_DEV", "IND_LIT_RATE"]:
+        s = dm[v].dropna(); r = DESC.loc[v]
+        assert len(s) == int(r["n"]), (v, len(s), int(r["n"]))             # the site sample must be the table's sample
+        binary = set(s.unique()) <= {0, 1}
+        if binary:
+            edges, counts = [0.0, 0.5, 1.0], [int((s < .5).sum()), int((s >= .5).sum())]
+        else:
+            counts, edges = np.histogram(s, bins=24)
+            counts, edges = [int(c) for c in counts], [float(e) for e in edges]
+        vout.append(dict(key=v, n=int(r["n"]), mean=float(r["mean"]), sd=float(r["sd"]),
+                         min=float(r["min"]), max=float(r["max"]), zero=float((s == 0).mean()),
+                         binary=bool(binary), edges=edges, counts=counts))
+    jput(vout, "variables")
+
     # ------------------------------------------------------------- coder agreement (method)
     jput([dict(field=r.field, pair=r.pair, n=int(r.n), agree=r.agreement) for _, r in AG.iterrows()], "agreement")
 
