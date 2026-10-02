@@ -8,7 +8,7 @@
   'use strict';
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
-  const V = '?v=11';                                        // bump on each release: GitHub Pages caches hard
+  const V = '?v=12';                                        // bump on each release: GitHub Pages caches hard
   const J = (p) => fetch('data/' + p + V).then((r) => r.json());
   const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function countTo(el, to, suffix) {                       // a stat tile counts up to its value once
@@ -77,6 +77,7 @@
       countTo($('#ov-nai'), H.nai);
       countTo($('#ov-nc'), H.nC);
       verdicts(M);
+      outcomeGrid(M);
       const seg = $('#ov-seg');
       seg.addEventListener('click', (e) => {
         const b = e.target.closest('button'); if (!b) return;
@@ -92,6 +93,32 @@
     return r || null;
   }
   const pp = (r) => (r.coef > 0 ? '+' : '−') + ' (p ' + pfmt(r.p) + ')';
+
+  // resources x {C, G, F}, both designs, as plain marks (owner 2026-10-01): the comparison outcomes beside the claims
+  function outcomeGrid(M) {
+    const RES = [['L1_RD_SALES0', 'R&amp;D / revenue (R₁)'], ['L1_LOG_AI_PAT_STOCK', 'AI patent portfolio (R₂)'],
+                 ['L1_AI_WORKER', 'AI-worker share (R₃)']];
+    const OUT = [['ln_C', 'Specific capability claims (C)', 'hypothesized'], ['ln_G', 'Generic AI risk (G)', 'comparison'],
+                 ['ln_F', 'Firm-specific AI risk (F)', 'comparison']];
+    const mark = (r, fe) => {
+      if (!r) return '<b class="om nil" title="not estimated">·</b>';
+      const sig = r.p < .05, cls = !sig ? 'nil' : r.coef > 0 ? 'up' : 'dn', g = !sig ? '○' : r.coef > 0 ? '▲' : '▼';
+      const tip = (fe === 'WITHIN' ? 'within firm' : 'between firms') + ': ' + fnum(r.coef) + ' (SE ' + fnum(r.se) + ', p ' + pfmt(r.p) + ')';
+      return '<b class="om ' + cls + '" title="' + tip + '">' + g + '</b>';
+    };
+    let h = '<div class="og-row og-head"><span></span>' +
+      OUT.map(([, lab, kind]) => '<span>' + lab + '<small>' + kind + '</small></span>').join('') + '</div>';
+    RES.forEach(([term, lab]) => {
+      h += '<div class="og-row"><span class="og-res">' + lab + '</span>' + OUT.map(([y]) => {
+        const m = 'H1 ' + term;
+        return '<span class="og-cell">' + mark(est(M, m, term, 'WITHIN', y), 'WITHIN') + mark(est(M, m, term, 'BETWEEN', y), 'BETWEEN') + '</span>';
+      }).join('') + '</div>';
+    });
+    const host = $('#ov-ogrid');
+    host.innerHTML = h;
+    if (REDUCED) return;
+    host.querySelectorAll('.og-cell').forEach((c, i) => { c.style.animationDelay = (200 + i * 90) + 'ms'; c.classList.add('pop'); });
+  }
 
   function verdicts(M) {
     const rd = ['H1 L1_RD_SALES0', 'L1_RD_SALES0'], ap = ['H1 L1_LOG_AI_PAT_STOCK', 'L1_LOG_AI_PAT_STOCK'];
@@ -119,14 +146,21 @@
     };
     const block = (x, y, lab) => '<g><rect x="' + x + '" y="' + y + '" width="46" height="17" rx="3" fill="#D4EBF2" stroke="#555" stroke-width=".8"/>' +
       '<text x="' + (x + 23) + '" y="' + (y + 12) + '" text-anchor="middle" font-size="8.5">' + lab + '</text></g>';
-    const bubble = (x, y, lab, cls) => '<g class="' + (cls || '') + '" ' + FO + '><rect x="' + x + '" y="' + y + '" width="60" height="26" rx="8" fill="#D9EAD3" stroke="#555" stroke-width=".8"/>' +
-      '<path d="M' + (x + 12) + ',' + (y + 25) + ' l-5,8 l11,-3 z" fill="#D9EAD3" stroke="#555" stroke-width=".8"/>' +
-      '<text x="' + (x + 30) + '" y="' + (y + 17) + '" text-anchor="middle" font-size="8.5">' + lab + '</text></g>';
+    // a speech bubble drawn as ONE outline (rounded body plus tail), so no stroke cuts across the tail's base
+    const bubble = (x, y, lab, cls) => {
+      const w = 68, h = 26, r = 8, tx = x + 12;
+      const d = 'M' + (x + r) + ',' + y + ' H' + (x + w - r) + ' Q' + (x + w) + ',' + y + ' ' + (x + w) + ',' + (y + r) +
+        ' V' + (y + h - r) + ' Q' + (x + w) + ',' + (y + h) + ' ' + (x + w - r) + ',' + (y + h) +
+        ' H' + (tx + 9) + ' L' + (tx - 5) + ',' + (y + h + 8) + ' L' + tx + ',' + (y + h) +
+        ' H' + (x + r) + ' Q' + x + ',' + (y + h) + ' ' + x + ',' + (y + h - r) + ' V' + (y + r) + ' Q' + x + ',' + y + ' ' + (x + r) + ',' + y + ' Z';
+      return '<g class="' + (cls || '') + '" ' + FO + '><path d="' + d + '" fill="#D9EAD3" stroke="#555" stroke-width=".8" stroke-linejoin="round"/>' +
+        '<text x="' + (x + w / 2) + '" y="' + (y + 17) + '" text-anchor="middle" font-size="8.5">' + lab + '</text></g>';
+    };
     const arrow = (cls, extra) => '<g class="' + cls + '" ' + (extra || '') + '><line x1="62" y1="36" x2="136" y2="36" stroke="#3a3a3a" stroke-width="2"/>' +
       '<path d="M136,31 l9,5 l-9,5 z" fill="#3a3a3a"/></g>';
     const scenes = {
       h1: '<svg class="vscene" viewBox="0 0 220 76">' + block(8, 10, 'R&amp;D') + block(8, 48, 'patents') +
-          arrow('a-draw') + bubble(148, 22, 'specific claim', 'a-pop') + '</svg>',
+          arrow('a-draw') + bubble(146, 22, 'specific claims', 'a-pop') + '</svg>',
       h2: '<svg class="vscene" viewBox="0 0 220 76">' +
           '<rect x="112" y="12" width="96" height="40" rx="5" fill="#EAD1DC" stroke="#555" stroke-width=".8"/>' +
           '<text x="189" y="35" text-anchor="middle" font-size="8">sector</text>' +
@@ -134,11 +168,11 @@
           '<g class="a-slide" ' + FO + '>' + block(122, 24, 'resource') + '</g>' +
           '<text x="110" y="68" text-anchor="middle" font-size="8.5" fill="#555">the sector that fits the resource</text></svg>',
       h3b: '<svg class="vscene" viewBox="0 0 220 76">' + block(8, 28, 'patents') +
-           arrow('a-thin', 'opacity=".35"') + bubble(148, 22, 'claims', 'a-shrink') +
+           arrow('a-thin', 'opacity=".35"') + bubble(146, 22, 'specific claims', 'a-shrink') +
            '<g class="a-snow" ' + FO + '>' + flake(99, 15, 11) + '</g></svg>',
       h3a: '<svg class="vscene" viewBox="0 0 220 76">' + block(8, 28, 'R&amp;D') +
            '<g opacity=".4"><line x1="62" y1="36" x2="136" y2="36" stroke="#3a3a3a" stroke-width="1.6" stroke-dasharray="5 4"/>' +
-           '<path d="M136,31 l9,5 l-9,5 z" fill="#3a3a3a"/></g>' + bubble(148, 22, 'claims?', '') +
+           '<path d="M136,31 l9,5 l-9,5 z" fill="#3a3a3a"/></g>' + bubble(146, 22, 'specific claims', '') +
            '<g class="a-scan" ' + FO + '><circle cx="99" cy="30" r="11" fill="none" stroke="#333" stroke-width="2"/>' +
            '<line x1="107" y1="38" x2="116" y2="47" stroke="#333" stroke-width="3" stroke-linecap="round"/></g></svg>',
     };

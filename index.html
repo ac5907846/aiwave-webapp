@@ -8,9 +8,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=11">
-<link rel="preload" href="data/headline.json?v=11" as="fetch" crossorigin>
-<link rel="preload" href="data/hero.json?v=11" as="fetch" crossorigin>
+<link rel="stylesheet" href="css/style.css?v=12">
+<link rel="preload" href="data/headline.json?v=12" as="fetch" crossorigin>
+<link rel="preload" href="data/hero.json?v=12" as="fetch" crossorigin>
 </head>
 <body>
 
@@ -84,6 +84,20 @@
         signs and p-values, within | between firms) appear with the button and in full in the
         Findings view.</p>
       <div class="verdicts" id="ov-verdicts"></div>
+    </div>
+
+    <div class="card">
+      <h2>Resources and the three forms of AI disclosure</h2>
+      <p class="sub">How each technological resource at t-1 is associated with specific capability
+        claims and with the two comparison outcomes, generic and firm-specific AI risk. Each cell
+        shows the two designs; hover a mark for the estimate.</p>
+      <div class="ogrid" id="ov-ogrid"></div>
+      <div class="legend ogrid-key">
+        <span><b class="om up">▲</b> positive association (p &lt; .05)</span>
+        <span><b class="om dn">▼</b> negative association (p &lt; .05)</span>
+        <span><b class="om nil">○</b> no clear association</span>
+        <span>left mark: within firm · right mark: between firms</span>
+      </div>
     </div>
 
     <div class="card">
@@ -277,8 +291,8 @@
 
 </main>
 
-<script src="js/charts.js?v=11"></script>
-<script src="js/hero.js?v=11"></script>
-<script src="js/app.js?v=11"></script>
+<script src="js/charts.js?v=12"></script>
+<script src="js/hero.js?v=12"></script>
+<script src="js/app.js?v=12"></script>
 </body>
 </html>

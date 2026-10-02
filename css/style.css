@@ -427,6 +427,23 @@ mark{background:color-mix(in srgb,var(--c3) 40%,transparent);color:inherit;
 .vscene .a-scan{animation:vScan 6s ease-in-out infinite}
 @media(prefers-reduced-motion:reduce){.vscene *{animation:none!important}}
 
+/* --------------------------------------------- resources x outcomes grid (2026-10-02) */
+.ogrid{display:flex;flex-direction:column;gap:6px;margin:6px 0 12px}
+.og-row{display:grid;grid-template-columns:minmax(150px,1.2fr) repeat(3,minmax(90px,1fr));gap:8px;align-items:center}
+.og-head span{font-size:12px;font-weight:650;color:var(--ink);text-align:center;line-height:1.3}
+.og-head small{display:block;font-weight:400;color:var(--ink-3);font-size:10.5px}
+.og-res{font-size:13px;color:var(--ink)}
+.og-cell{display:flex;justify-content:center;gap:16px;background:var(--surface-2);border-radius:var(--r-s);padding:8px 0}
+.og-cell.pop{animation:ogPop .45s ease-out both}
+@keyframes ogPop{0%{opacity:0;transform:scale(.85)}100%{opacity:1;transform:scale(1)}}
+.om{font-size:16px;line-height:1;cursor:help;font-weight:400}
+.om.up{color:#1f8a70}
+.om.dn{color:#c8641e}
+.om.nil{color:var(--ink-3)}
+.ogrid-key .om{font-size:12px;margin-right:4px}
+@media(max-width:640px){.og-row{grid-template-columns:110px repeat(3,1fr)}.og-cell{gap:8px}}
+@media(prefers-reduced-motion:reduce){.og-cell.pop{animation:none}}
+
 /* --------------------------------------------- firm profile panel (2026-10-01) */
 .firmpanel{border:1px solid var(--line-2);border-radius:var(--r-s);background:var(--surface-2);
   padding:13px 15px 10px;margin:0 0 14px}
