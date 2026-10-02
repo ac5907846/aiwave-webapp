@@ -10,6 +10,7 @@ master, and 95% bands drawn in the browser as estimate +/- 1.96 SE.
 Run:  python build_data.py     (re-run after any analysis re-run)
 """
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -183,6 +184,81 @@ def main():
               counts=dict(n10k=len(M), firms=int(M.cik.nunique()),
                           nai=int((M.n_ai > 0)[(M.is_operating == 1) & (M.coded == 1)].sum()),
                           nC10k=int((M.n_C > 0)[(M.is_operating == 1) & (M.coded == 1)].sum()))), "hero")
+
+    # ------------------------------------------------------------- the filing window (2026-10-02): lazy per-firm and per-sector files
+    # (a) every coded sentence of every filing, one file per firm: data/coded/{cik}.json
+    #     {fy: {"u": primary document URL, "s": [[text, section, kinds, capability, criteria], ...]}}
+    #     kinds: C specific claim, V capability statement below the three-criteria bar, G generic risk, F firm-specific
+    #     risk, O other AI mention, X not about AI (excluded); capability u = current use, i = intention; criteria = the
+    #     six 0/1 flags for capability sentences. Text is shown as coded; only whitespace and page-header residue are tidied.
+    cat = pd.read_csv(core.PROJECT / "01_raw_data" / "sec_10k" / "filings_catalog.csv", usecols=["file", "primary_doc_url"])
+    cat["adsh"] = cat.file.str.extract(r"_(\d{10}-\d{2}-\d{6})")[0]
+    doc_url = cat.dropna(subset=["adsh"]).set_index("adsh").primary_doc_url.to_dict()
+    PA = pd.read_csv(core.out("passages_coded.csv"))
+    D6 = ["d_action", "d_usecase", "d_named", "d_quant", "d_timing", "d_verifiable"]
+    TOC = re.compile(r"\s*\b\d{0,3}\s*Table of Contents\b\s*", re.I)
+    def tidy(t):                                                       # full sentence: every coded sentence is under 1,200 characters
+        return TOC.sub(" ", " ".join(str(t).split())).strip()
+    def kinds(r):
+        if r.about != "AI": return "X"
+        k = ("C" if r.is_C == 1 else "V" if r.is_cap == 1 else "") + ("G" if r.is_G == 1 else "") + ("F" if r.is_F == 1 else "")
+        return k or "O"
+    SEC_ORDER = {"item1": 0, "item1a": 1, "item1b": 2, "item2": 3, "item3": 4, "item5": 5, "item7": 6, "item7a": 7, "unsegmented": 8}
+    PA["k"] = [kinds(r) for r in PA.itertuples()]
+    PA["c"] = PA.cap.map({"USE": "u", "INTENT": "i"}).where(PA.is_cap == 1, "")
+    PA["d"] = PA[D6].astype(int).astype(str).agg("".join, axis=1).where(PA.is_cap == 1, "")
+    PA["so"] = PA.section.map(SEC_ORDER).fillna(9)
+    PA = PA.sort_values(["cik", "fy", "so", "sentence_index"])
+    cdir = DATA / "coded"; cdir.mkdir(exist_ok=True)
+    for old in cdir.glob("*.json"): old.unlink()
+    nfile = nbytes = 0
+    for cik, g in PA.groupby("cik"):
+        obj = {}
+        for fy, h in g.groupby("fy"):
+            adsh = h.adsh.iloc[0]
+            obj[str(int(fy))] = {"u": doc_url.get(adsh, ""), "s": [[tidy(r.sentence), r.section, r.k, r.c, r.d] for r in h.itertuples()]}
+        p = cdir / f"{int(cik)}.json"
+        p.write_text(json.dumps(obj, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
+        nfile += 1; nbytes += p.stat().st_size
+    assert sum(len(v["s"]) for f in cdir.glob("*.json") for v in json.loads(f.read_text(encoding="utf-8")).values()) == len(PA), "a coded sentence was lost"
+    print(f"  coded/*.json  {nfile} firms, {nbytes / 1048576:.1f} MB, {len(PA):,} sentences")
+
+    # (b) firm resources as the models read them: the fiscal year BEFORE each 10-K (t-1). For every 10-K year t:
+    #     [fy, sector index, R&D $M (t-1), revenue $M (t-1), employees (t-1), R&D / revenue (t-1), its share-lower percentile,
+    #      AI patents granted (t-1), all patents granted (t-1), AI patent stock (t-1), percentile, AI-worker share (t-1),
+    #      percentile, securities class actions naming the firm before this filing]
+    #     Percentiles: share of the sector's firm-years in the same 10-K year with a strictly lower value (estimation
+    #     sample), a display transform. data/profiles/{sector}.json holds the firms of that sector; data/sector_year.json
+    #     holds sector medians and the litigation exposure (L) for every 10-K year.
+    B = M.sort_values(["cik", "fy"]).copy()
+    prev = B.groupby("cik")[["RD", "REV", "EMP", "PAT_T_N_AI_PAT", "PAT_T_N_PAT", "fy"]].shift(1)
+    okp = prev.fy == B.fy - 1
+    for c in ("RD", "REV", "EMP", "PAT_T_N_AI_PAT", "PAT_T_N_PAT"):
+        B["P_" + c] = prev[c].where(okp)
+    samp = (B.is_operating == 1) & (B.coded == 1)
+    for v in ("L1_RD_SALES0", "L1_AI_PAT_STOCK", "L1_AI_WORKER"):
+        s = B[v].where(samp)
+        g = s.groupby([B.industry, B.fy])
+        B["PCT_" + v] = (g.rank(method="min") - 1) / g.transform("count")
+    sy = {}
+    for (ind, fy), g in B[samp].groupby(["industry", "fy"]):
+        sy.setdefault(ind, {})[str(int(fy))] = [g.L1_RD_SALES0.median(), g.L1_AI_PAT_STOCK.median(), g.L1_AI_WORKER.median(),
+                                                g.IND_LIT_RATE.dropna().iloc[0] if g.IND_LIT_RATE.notna().any() else None, int(len(g))]
+    jput(dict(sectors=list(SLUG), med=sy), "sector_year")
+    pdir = DATA / "profiles"; pdir.mkdir(exist_ok=True)
+    sec_idx = {s: i for i, s in enumerate(SLUG)}
+    last_ind = B.groupby("cik").industry.last()
+    rnd = lambda v, d: None if pd.isna(v) else round(float(v), d)
+    for ind, slug in SLUG.items():
+        obj = {}
+        for cik, g in B[B.cik.isin(last_ind[last_ind == ind].index)].groupby("cik"):
+            obj[str(int(cik))] = [[int(r.fy), sec_idx[r.industry], rnd(r.P_RD / 1e6, 1), rnd(r.P_REV / 1e6, 1), rnd(r.P_EMP, 0),
+                                   rnd(r.L1_RD_SALES0, 4), rnd(r.PCT_L1_RD_SALES0, 3), rnd(r.P_PAT_T_N_AI_PAT, 0), rnd(r.P_PAT_T_N_PAT, 0),
+                                   rnd(r.L1_AI_PAT_STOCK, 1), rnd(r.PCT_L1_AI_PAT_STOCK, 3), rnd(r.L1_AI_WORKER, 5),
+                                   rnd(r.PCT_L1_AI_WORKER, 3), rnd(r.N_PRIOR_SUITS, 0)] for r in g.itertuples()]
+        p = pdir / f"{slug}.json"
+        p.write_text(json.dumps(obj, separators=(",", ":")), encoding="utf-8")
+        print(f"  profiles/{p.name}  {p.stat().st_size / 1024:.0f} KB")
 
     # ------------------------------------------------------------- example sentences per sector
     # for each filing with coded AI sentences: the best sentence to preview
