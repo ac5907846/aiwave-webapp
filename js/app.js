@@ -8,7 +8,7 @@
   'use strict';
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
-  const V = '?v=8';                                        // bump on each release: GitHub Pages caches hard
+  const V = '?v=9';                                        // bump on each release: GitHub Pages caches hard
   const J = (p) => fetch('data/' + p + V).then((r) => r.json());
   const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function countTo(el, to, suffix) {                       // a stat tile counts up to its value once
@@ -113,12 +113,11 @@
       h1: '<svg class="vscene" viewBox="0 0 220 76">' + block(8, 10, 'R&amp;D') + block(8, 48, 'patents') +
           arrow('a-draw') + bubble(148, 22, 'specific claim', 'a-pop') + '</svg>',
       h2: '<svg class="vscene" viewBox="0 0 220 76">' +
-          '<rect x="104" y="18" width="104" height="40" rx="5" fill="#EAD1DC" stroke="#555" stroke-width=".8"/>' +
-          '<text x="178" y="35" text-anchor="middle" font-size="8.5">sector that</text>' +
-          '<text x="178" y="47" text-anchor="middle" font-size="8.5">fits the resource</text>' +
-          '<rect x="112" y="29" width="24" height="18" fill="#fff" stroke="#555" stroke-width=".7"/>' +
-          '<g class="a-slide" ' + FO + '><rect x="114" y="31" width="20" height="14" rx="2" fill="#D4EBF2" stroke="#555" stroke-width=".8"/></g>' +
-          '<text x="12" y="14" font-size="8.5" fill="#555">the resource lands where it fits</text></svg>',
+          '<rect x="100" y="16" width="108" height="44" rx="5" fill="#EAD1DC" stroke="#555" stroke-width=".8"/>' +
+          '<text x="181" y="34" text-anchor="middle" font-size="8.5">sector that</text>' +
+          '<text x="181" y="46" text-anchor="middle" font-size="8.5">fits the resource</text>' +
+          '<rect x="106" y="27" width="50" height="21" fill="#fff" stroke="#555" stroke-width=".7"/>' +
+          '<g class="a-slide" ' + FO + '>' + block(108, 29, 'resource') + '</g></svg>',
       h3b: '<svg class="vscene" viewBox="0 0 220 76">' + block(8, 28, 'patents') +
            arrow('a-thin', 'opacity=".35"') + bubble(148, 22, 'claims', 'a-shrink') +
            '<g class="a-snow" ' + FO + '><g stroke="#0b3d5c" stroke-width="1.6" stroke-linecap="round">' +
@@ -189,6 +188,26 @@
         const row = D.series.find((x) => x.name === s.name);
         return pct(v, 1) + ' of ' + fmtInt(row.n[D.years.indexOf(yr)]) + ' 10-Ks';
       },
+    });
+    // the lines draw in from the left on load and on every outcome toggle (owner 2026-10-01)
+    if (REDUCED) return;
+    const svg = $('#ch-diffusion svg');
+    if (!svg) return;
+    svg.querySelectorAll('polyline').forEach((pl, i) => {
+      const L = pl.getTotalLength();
+      pl.style.transition = 'none'; pl.style.strokeDasharray = L; pl.style.strokeDashoffset = L;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        pl.style.transition = 'stroke-dashoffset 1s ease-out ' + (i * 35) + 'ms';
+        pl.style.strokeDashoffset = '0';
+      }));
+      setTimeout(() => { pl.style.strokeDasharray = ''; pl.style.strokeDashoffset = ''; pl.style.transition = ''; }, 1500 + i * 35);
+    });
+    svg.querySelectorAll('circle').forEach((c) => {
+      c.style.transition = 'none'; c.style.opacity = '0';
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        c.style.transition = 'opacity .45s ease 950ms'; c.style.opacity = '1';
+      }));
+      setTimeout(() => { c.style.opacity = ''; c.style.transition = ''; }, 1800);
     });
   }
 
