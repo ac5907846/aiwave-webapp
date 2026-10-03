@@ -150,7 +150,15 @@ def main():
     jput(vout, "variables")
 
     # ------------------------------------------------------------- coder agreement (method)
-    jput([dict(field=r.field, pair=r.pair, n=int(r.n), agree=r.agreement) for _, r in AG.iterrows()], "agreement")
+    # the share of sentences whose final type label at least three of the four coders share (coder_agreement.csv), and the
+    # final labels against the reading of 400 sentences (folder 21), as the manuscript reports them
+    VA = pd.read_csv(core.results("21") / "validation_agreement_r2_four_coders.csv")
+    va = VA[VA.weighting == "unweighted"].set_index("target")
+    jput(dict(shared=[dict(field=r.field, share=r.agreement) for _, r in AG[AG.pair == "final label shared by at least 3 coders"].iterrows()],
+              check=[dict(measure=lab, agree=float(va.loc[t, "agreement"]), kappa=float(va.loc[t, "kappa"]))
+                     for t, lab in (("Specific capability claim (C)", "specific capability claims (C)"), ("Generic AI risk (G)", "generic AI risk (G)"),
+                                    ("Firm-specific AI risk (F)", "firm-specific AI risk (F)"))],
+              n_check=int(va.loc["Specific capability claim (C)", "n_rows"])), "agreement")
 
     # ------------------------------------------------------------- filings grid + firm search + firm resources
     # one record per firm; per year: [fy, operating&coded, n AI sentences, nC, nG, nF, C per 10k words, adsh,
@@ -183,7 +191,9 @@ def main():
               fy0=2014, y=hy, s=hs, l=hl,
               counts=dict(n10k=len(M), firms=int(M.cik.nunique()),
                           nai=int((M.n_ai > 0)[(M.is_operating == 1) & (M.coded == 1)].sum()),
-                          nC10k=int((M.n_C > 0)[(M.is_operating == 1) & (M.coded == 1)].sum()))), "hero")
+                          nC10k=int((M.n_C > 0)[(M.is_operating == 1) & (M.coded == 1)].sum()),
+                          cSoft=100 * float(T1x.loc["Software & IT services", "any_C"]),
+                          cRetail=100 * float(T1x.loc["Retail", "any_C"]))), "hero")
 
     # ------------------------------------------------------------- the filing window (2026-10-02): lazy per-firm and per-sector files
     # (a) every coded sentence of every filing, one file per firm: data/coded/{cik}.json
