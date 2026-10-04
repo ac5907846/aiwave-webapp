@@ -93,7 +93,7 @@ def main():
             out.append(dict(model=r.model, term=r.term, fe=r.fe, y=r.y, coef=r.coef, se=r.se,
                             p=r.p, n=int(r.n), firms=int(r.firms)))
         return out
-    keep = D[(D.table != "R1") & (D.term.isin(["L1_RD_SALES0", "L1_LOG_AI_PAT_STOCK", "L1_AI_WORKER", "RxM", "RxL", "HIGH_AIIE"])
+    keep = D[(D.table != "R1") & (D.term.isin(["L1_RD_SALES0", "L1_LOG_AI_PAT_STOCK", "L1_AI_WORKER", "RxL"])
                                   | D.model.str.contains("AI_MODE"))]          # the production-mode model: slopes and contrasts
     wald = [dict(resource=r.resource, fe=r.fe, spec=r.spec, kind=r["kind"], p=r.p, industries=int(r.industries))
             for _, r in WD.iterrows()]
@@ -124,7 +124,7 @@ def main():
         sec.append(dict(name=ind, slug=SLUG[ind], mode=r["mode"], firms=int(r.firms), fy=int(r.firm_years),
                         anyC=r.any_C, anyG=r.any_G, anyF=r.any_F, meanC=r.mean_C,
                         rd_med=r.rd_rev_median, rd_pos=r.rd_positive, pat=r.ai_pat_any,
-                        hi_aiie=None if pd.isna(r.high_aiie) else r.high_aiie,
+                        workers=None if pd.isna(r.ai_worker_half) else r.ai_worker_half,
                         suit=r.suit_rate_mean))
     jput(sec, "sectors")
 
@@ -135,7 +135,7 @@ def main():
     dm = M[(M.is_operating == 1) & (M.coded == 1) & M.fy.between(2015, 2025)]
     vout = []
     for v in ["C", "G", "F", "L1_RD_SALES0", "L1_LOG_AI_PAT_STOCK", "L1_AI_WORKER",
-              "HIGH_AIIE", "MODE_PRODUCER", "MODE_CODEV", "IND_LIT_RATE"]:
+              "MODE_PRODUCER", "MODE_CODEV", "IND_LIT_RATE"]:
         s = dm[v].dropna(); r = DESC.loc[v]
         assert len(s) == int(r["n"]), (v, len(s), int(r["n"]))             # the site sample must be the table's sample
         binary = set(s.unique()) <= {0, 1}

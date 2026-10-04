@@ -37,7 +37,7 @@
   }
 
   /* pack each column bottom-up; pitch chosen so the tallest column fits */
-  var GROUPS = ['AI producers', 'AI co-developers', 'AI adopters'];
+  var GROUPS = ['AI producers (S1)', 'AI co-developers (S2)', 'AI adopters (S3)'];
   function layout(colOf, ncol, gapAfter) {
     var W = cv.width / DPR, H = cv.height / DPR, top = 8, bottom = 22;
     var counts = []; for (var c = 0; c < ncol; c++) counts.push(0);
