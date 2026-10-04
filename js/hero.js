@@ -4,7 +4,7 @@
      0  every filing, in columns by fiscal year
      1  AI language spreads, a year-by-year sweep
      2  specific capability claims stay rare
-     3  the dots regroup by sector: claims concentrate where sectors build AI
+     3  the dots regroup by sector: claims concentrate among AI producers
    It always runs: only its Pause pill stops it (owner 2026-10-02), and it
    restarts from the first stage whenever the Overview tab is opened again.
    Numbers in the readout count between values. prefers-reduced-motion lands on
