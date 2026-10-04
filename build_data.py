@@ -93,8 +93,8 @@ def main():
             out.append(dict(model=r.model, term=r.term, fe=r.fe, y=r.y, coef=r.coef, se=r.se,
                             p=r.p, n=int(r.n), firms=int(r.firms)))
         return out
-    keep = D[(D.table != "R1") & D.term.isin(
-        ["L1_RD_SALES0", "L1_LOG_AI_PAT_STOCK", "L1_AI_WORKER", "RxM", "RxL", "HIGH_AIIE", "INTERNAL_DEV"])]
+    keep = D[(D.table != "R1") & (D.term.isin(["L1_RD_SALES0", "L1_LOG_AI_PAT_STOCK", "L1_AI_WORKER", "RxM", "RxL", "HIGH_AIIE"])
+                                  | D.model.str.contains("AI_MODE"))]          # the production-mode model: slopes and contrasts
     wald = [dict(resource=r.resource, fe=r.fe, spec=r.spec, kind=r["kind"], p=r.p, industries=int(r.industries))
             for _, r in WD.iterrows()]
     jput(dict(models=rows(keep), wald=wald), "models")
@@ -135,7 +135,7 @@ def main():
     dm = M[(M.is_operating == 1) & (M.coded == 1) & M.fy.between(2015, 2025)]
     vout = []
     for v in ["C", "G", "F", "L1_RD_SALES0", "L1_LOG_AI_PAT_STOCK", "L1_AI_WORKER",
-              "HIGH_AIIE", "INTERNAL_DEV", "IND_LIT_RATE"]:
+              "HIGH_AIIE", "MODE_PRODUCER", "MODE_CODEV", "IND_LIT_RATE"]:
         s = dm[v].dropna(); r = DESC.loc[v]
         assert len(s) == int(r["n"]), (v, len(s), int(r["n"]))             # the site sample must be the table's sample
         binary = set(s.unique()) <= {0, 1}
@@ -187,7 +187,7 @@ def main():
         op = int(r.is_operating == 1 and r.coded == 1)
         hl.append(0 if not op else 1 if r.n_ai == 0 else 2 if r.n_C == 0 else 3)
     T1x = pd.read_csv(core.out("d19_T1_by_industry.csv")).set_index("industry")
-    jput(dict(sectors=sec_order, inhouse=[int(T1x.loc[s, "mode"] == "in-house") for s in sec_order],
+    jput(dict(sectors=sec_order, mode=[{"producer": 0, "co-developer": 1, "adopter": 2}[T1x.loc[s, "mode"]] for s in sec_order],
               fy0=2014, y=hy, s=hs, l=hl,
               counts=dict(n10k=len(M), firms=int(M.cik.nunique()),
                           nai=int((M.n_ai > 0)[(M.is_operating == 1) & (M.coded == 1)].sum()),
